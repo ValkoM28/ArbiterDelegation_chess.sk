@@ -194,7 +194,7 @@
                 if (leaguesData.leagues && leaguesData.leagues.length > 0) {
                     const firstFew = leaguesData.leagues.slice(0, 3);
                     leaguesPreview.innerHTML = firstFew.map(league => 
-                        `<div>• ${league.LeagueName} (${league.SaisonName})</div>`
+                        `<div>• ${league.leagueName} (${league.saisonName})</div>`
                     ).join('');
                     if (leaguesData.leagues.length > 3) {
                         leaguesPreview.innerHTML += `<div class="text-gray-400">... and ${leaguesData.leagues.length - 3} more</div>`;
@@ -224,8 +224,8 @@
                     // Add league options
                     data.leagues.forEach(league => {
                         const option = document.createElement('option');
-                        option.value = league.LeagueId;
-                        option.textContent = `${league.LeagueName} (${league.SaisonName})`;
+                        option.value = league.leagueId;
+                        option.textContent = `${league.leagueName} (${league.saisonName})`;
                         leagueSelect.appendChild(option);
                     });
                     
@@ -274,8 +274,8 @@
                 
                 if (data.league) {
                     // Update fields with real league data
-                    directorField.value = `${data.league.DirectorFirstName} ${data.league.DirectorSurname}`;
-                    directorContactField.value = data.league.DirectorEmail || 'Contact not specified';
+                    directorField.value = `${data.league.directorFirstName} ${data.league.directorSurname}`;
+                    directorContactField.value = data.league.directorEmail || 'Contact not specified';
                 } else {
                     directorField.value = 'League not found';
                     directorContactField.value = 'Contact not available';
