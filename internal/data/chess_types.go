@@ -22,14 +22,14 @@ type Arbiter struct {
 
 // League represents a league from the chess.sk API
 type League struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Season    string `json:"season"`
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-	Status    string `json:"status"`
-	Location  string `json:"location"`
-	// Add more fields as needed based on your API response
+	LeagueId          string `json:"leagueId"`
+	SaisonName        string `json:"saisonName"`
+	LeagueName        string `json:"leagueName"`
+	ChessResultsLink  string `json:"chessResultsLink"`
+	DirectorId        string `json:"directorId"`
+	DirectorSurname   string `json:"directorSurname"`
+	DirectorFirstName string `json:"directorFirstName"`
+	DirectorEmail     string `json:"directorEmail"`
 }
 
 // ProcessArbitersData processes raw API data and extracts arbiters
@@ -122,7 +122,7 @@ func (sd *SessionData) GetLeagueByID(leagueID int) (*League, error) {
 	}
 
 	for _, league := range leagues {
-		if league.ID == leagueID {
+		if league.LeagueId == fmt.Sprintf("%d", leagueID) {
 			return &league, nil
 		}
 	}

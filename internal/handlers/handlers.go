@@ -59,6 +59,15 @@ func RegisterRoutes(r *gin.Engine) {
 		}
 		fmt.Println("DEBUG: Session data is initialized, proceeding with API calls")
 
+		// Parse request body to get season year
+		var requestBody struct {
+			SeasonStartYear string `json:"seasonStartYear"`
+		}
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
 		// Load arbiters data from your real API
 		err := sessionData.LoadData("arbiters", "https://chess.sk/api/matrika.php/v1/arbiters")
 		if err != nil {
@@ -66,8 +75,9 @@ func RegisterRoutes(r *gin.Engine) {
 			return
 		}
 
-		// Load leagues data from your real API
-		err = sessionData.LoadData("leagues", "https://chess.sk/api/leagues.php/v1/leagues")
+		// Load leagues data from your real API with season parameter
+		leaguesURL := fmt.Sprintf("https://chess.sk/api/leagues.php/v1/leagues?saisonStartYear=%s", requestBody.SeasonStartYear)
+		err = sessionData.LoadData("leagues", leaguesURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load leagues: " + err.Error()})
 			return
