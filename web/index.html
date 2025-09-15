@@ -3,12 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Document</title>
+    <title>Chess Arbiter Delegation Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">
+            Chess Arbiter Delegation Generator
+        </h1>
+        
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <!-- Load External Data Section -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">External Data</h2>
+                <button 
+                    id="loadDataBtn" 
+                    onclick="loadExternalData()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200"
+                >
+                    Load External Data
+                </button>
+                <div id="loadStatus" class="mt-2 text-sm"></div>
+                
+                <!-- Data Preview -->
+                <div id="dataPreview" class="mt-4 hidden">
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Loaded Data Preview</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-medium text-gray-600">Arbiters</h4>
+                            <div id="arbitersPreview" class="text-sm text-gray-500"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-600">Leagues</h4>
+                            <div id="leaguesPreview" class="text-sm text-gray-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <h1 class="text-center"> Frontend Works!</h1>
+            <!-- PDF Generation Section -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">PDF Generation</h2>
+                <button 
+                    onclick="listFields()"
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-200 mr-2"
+                >
+                    List PDF Fields
+                </button>
+                <button 
+                    onclick="generatePDF()"
+                    class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition duration-200"
+                >
+                    Generate PDF
+                </button>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="status" class="text-sm text-gray-600"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadExternalData() {
+            const btn = document.getElementById('loadDataBtn');
+            const status = document.getElementById('loadStatus');
+            
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            status.textContent = 'Loading external data...';
+            
+            try {
+                const response = await fetch('/load-external-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    status.innerHTML = `
+                        <span class="text-green-600">✓ ${result.message}</span><br>
+                        <span class="text-sm">Arbiters: ${result.arbiters_loaded ? 'Loaded' : 'Not loaded'}</span><br>
+                        <span class="text-sm">Leagues: ${result.leagues_loaded ? 'Loaded' : 'Not loaded'}</span>
+                    `;
+                    
+                    // Show data preview
+                    if (result.arbiters_loaded && result.leagues_loaded) {
+                        showDataPreview();
+                    }
+                } else {
+                    status.innerHTML = `<span class="text-red-600">✗ Error: ${result.error}</span>`;
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="text-red-600">✗ Network error: ${error.message}</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Load External Data';
+            }
+        }
+
+        async function showDataPreview() {
+            const preview = document.getElementById('dataPreview');
+            const arbitersPreview = document.getElementById('arbitersPreview');
+            const leaguesPreview = document.getElementById('leaguesPreview');
+            
+            try {
+                // Fetch arbiters data
+                const arbitersResponse = await fetch('/arbiters');
+                const arbitersData = await arbitersResponse.json();
+                
+                if (arbitersData.arbiters && arbitersData.arbiters.length > 0) {
+                    const firstFew = arbitersData.arbiters.slice(0, 3);
+                    arbitersPreview.innerHTML = firstFew.map(arbiter => 
+                        `<div>• ${arbiter.name} ${arbiter.surname} (${arbiter.category})</div>`
+                    ).join('');
+                    if (arbitersData.arbiters.length > 3) {
+                        arbitersPreview.innerHTML += `<div class="text-gray-400">... and ${arbitersData.arbiters.length - 3} more</div>`;
+                    }
+                } else {
+                    arbitersPreview.innerHTML = '<div class="text-gray-400">No arbiters data</div>';
+                }
+
+                // Fetch leagues data
+                const leaguesResponse = await fetch('/leagues');
+                const leaguesData = await leaguesResponse.json();
+                
+                if (leaguesData.leagues && leaguesData.leagues.length > 0) {
+                    const firstFew = leaguesData.leagues.slice(0, 3);
+                    leaguesPreview.innerHTML = firstFew.map(league => 
+                        `<div>• ${league.name} (${league.season})</div>`
+                    ).join('');
+                    if (leaguesData.leagues.length > 3) {
+                        leaguesPreview.innerHTML += `<div class="text-gray-400">... and ${leaguesData.leagues.length - 3} more</div>`;
+                    }
+                } else {
+                    leaguesPreview.innerHTML = '<div class="text-gray-400">No leagues data</div>';
+                }
+
+                // Show the preview
+                preview.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading data preview:', error);
+            }
+        }
+
+        async function listFields() {
+            const status = document.getElementById('status');
+            status.textContent = 'Listing PDF fields...';
+            
+            try {
+                const response = await fetch('/list-fields');
+                const result = await response.json();
+                
+                if (response.ok) {
+                    status.textContent = '✓ Fields listed to console. Check server logs for details.';
+                } else {
+                    status.textContent = `✗ Error: ${result.error}`;
+                }
+            } catch (error) {
+                status.textContent = `✗ Network error: ${error.message}`;
+            }
+        }
+
+        async function generatePDF() {
+            const status = document.getElementById('status');
+            status.textContent = 'Generating PDF...';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        // Add your PDF field data here
+                        test_field: 'Test Value'
+                    })
+                });
+                
+                if (response.ok) {
+                    // Download the PDF
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'delegacny.pdf';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    status.textContent = '✓ PDF generated and downloaded!';
+                } else {
+                    const result = await response.json();
+                    status.textContent = `✗ Error: ${result.error}`;
+                }
+            } catch (error) {
+                status.textContent = `✗ Network error: ${error.message}`;
+            }
+        }
+    </script>
 </body>
 </html>

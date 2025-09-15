@@ -8,6 +8,9 @@ import (
 )
 
 func main() {
+	// Initialize session data storage
+	handlers.InitializeSessionData()
+
 	// Create Gin router
 	r := gin.Default()
 
