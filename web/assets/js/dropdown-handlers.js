@@ -163,11 +163,63 @@ function updatePreparePdfButtonState() {
     const arbiterSelect = document.getElementById('arbiterSelect');
     const leagueSelect = document.getElementById('leagueSelect');
     const preparePdfBtn = document.getElementById('preparePdfBtn');
+    const downloadExcelBtn = document.getElementById('downloadExcelBtn');
     
-    // Enable button only if both arbiter and league are selected
+    // Enable buttons only if both arbiter and league are selected
     if (arbiterSelect.value && leagueSelect.value) {
         preparePdfBtn.disabled = false;
+        if (downloadExcelBtn) {
+            downloadExcelBtn.disabled = false;
+        }
     } else {
         preparePdfBtn.disabled = true;
+        if (downloadExcelBtn) {
+            downloadExcelBtn.disabled = true;
+        }
+    }
+}
+
+async function downloadExcelFile() {
+    const leagueSelect = document.getElementById('leagueSelect');
+    const downloadBtn = document.getElementById('downloadExcelBtn');
+    const downloadStatus = document.getElementById('downloadStatus');
+    
+    if (!leagueSelect.value) {
+        downloadStatus.innerHTML = '<span class="text-red-600">✗ Please select a league first</span>';
+        return;
+    }
+    
+    // Update button state
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = 'Downloading...';
+    downloadStatus.textContent = 'Downloading Excel file...';
+    
+    try {
+        const response = await fetch('/download-excel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                leagueId: parseInt(leagueSelect.value)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            downloadStatus.innerHTML = `
+                <span class="text-green-600">✓ ${result.message}</span><br>
+                <span class="text-sm text-gray-600">File saved to: ${result.filePath}</span><br>
+                <span class="text-sm text-gray-600">League: ${result.league}</span>
+            `;
+        } else {
+            downloadStatus.innerHTML = `<span class="text-red-600">✗ Error: ${result.error}</span>`;
+        }
+    } catch (error) {
+        downloadStatus.innerHTML = `<span class="text-red-600">✗ Network error: ${error.message}</span>`;
+    } finally {
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = 'Download Excel File';
     }
 }
