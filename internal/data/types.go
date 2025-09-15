@@ -95,11 +95,15 @@ func fetchFromAPI(url string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("failed to read response: %v", err)
 	}
 
-	// Parse the JSON response
-	var result map[string]interface{}
+	// Parse the JSON response - it could be an array or an object
+	var result interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %v", err)
 	}
 
-	return result, nil
+	// Convert to map format for consistency
+	resultMap := make(map[string]interface{})
+	resultMap["data"] = result
+
+	return resultMap, nil
 }

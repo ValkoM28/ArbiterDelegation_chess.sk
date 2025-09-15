@@ -17,7 +17,9 @@ var sessionData *data.SessionData
 
 // InitializeSessionData initializes the global session data storage
 func InitializeSessionData() {
+	fmt.Println("DEBUG: Initializing session data...")
 	sessionData = data.NewSessionData()
+	fmt.Println("DEBUG: Session data initialized successfully")
 }
 
 func RegisterRoutes(r *gin.Engine) {
@@ -49,10 +51,13 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// Load external data button endpoint
 	r.POST("/load-external-data", func(c *gin.Context) {
+		fmt.Println("DEBUG: Load external data endpoint called")
 		if sessionData == nil {
+			fmt.Println("DEBUG: Session data is nil!")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
 			return
 		}
+		fmt.Println("DEBUG: Session data is initialized, proceeding with API calls")
 
 		// Load arbiters data from your real API
 		err := sessionData.LoadData("arbiters", "https://chess.sk/api/matrika.php/v1/arbiters")
@@ -148,6 +153,31 @@ func RegisterRoutes(r *gin.Engine) {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"arbiter": arbiter})
+	})
+
+	// Get specific league by ID
+	r.GET("/leagues/:id", func(c *gin.Context) {
+		leagueID := c.Param("id")
+
+		if sessionData == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
+			return
+		}
+
+		// Convert string ID to int
+		var id int
+		if _, err := fmt.Sscanf(leagueID, "%d", &id); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid league ID"})
+			return
+		}
+
+		league, err := sessionData.GetLeagueByID(id)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"league": league})
 	})
 }
 

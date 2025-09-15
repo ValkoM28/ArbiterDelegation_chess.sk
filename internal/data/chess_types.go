@@ -7,15 +7,17 @@ import (
 
 // Arbiter represents an arbiter from the chess.sk API
 type Arbiter struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Surname  string `json:"surname"`
-	Category string `json:"category"`
-	License  string `json:"license"`
-	Active   bool   `json:"active"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	// Add more fields as needed based on your API response
+	ArbiterId    string `json:"ArbiterId"`
+	PlayerId     string `json:"PlayerId"`
+	FideId       string `json:"FideId"`
+	LastName     string `json:"LastName"`
+	FirstName    string `json:"FirstName"`
+	ValidTo      string `json:"ValidTo"`
+	Licencia     string `json:"Licencia"`
+	KlubId       string `json:"KlubId"`
+	KlubName     string `json:"KlubName"`
+	IsActive     bool   `json:"IsActive"`
+	ArbiterLevel string `json:"ArbiterLevel"`
 }
 
 // League represents a league from the chess.sk API
@@ -32,8 +34,19 @@ type League struct {
 
 // ProcessArbitersData processes raw API data and extracts arbiters
 func ProcessArbitersData(rawData interface{}) ([]Arbiter, error) {
-	// Convert raw data to JSON bytes
-	jsonData, err := json.Marshal(rawData)
+	// Extract the actual data array from our wrapped structure
+	dataMap, ok := rawData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw data is not a map")
+	}
+
+	dataArray, ok := dataMap["data"]
+	if !ok {
+		return nil, fmt.Errorf("no 'data' field in raw data")
+	}
+
+	// Convert to JSON bytes
+	jsonData, err := json.Marshal(dataArray)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling raw data: %v", err)
 	}
@@ -49,8 +62,19 @@ func ProcessArbitersData(rawData interface{}) ([]Arbiter, error) {
 
 // ProcessLeaguesData processes raw API data and extracts leagues
 func ProcessLeaguesData(rawData interface{}) ([]League, error) {
-	// Convert raw data to JSON bytes
-	jsonData, err := json.Marshal(rawData)
+	// Extract the actual data array from our wrapped structure
+	dataMap, ok := rawData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw data is not a map")
+	}
+
+	dataArray, ok := dataMap["data"]
+	if !ok {
+		return nil, fmt.Errorf("no 'data' field in raw data")
+	}
+
+	// Convert to JSON bytes
+	jsonData, err := json.Marshal(dataArray)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling raw data: %v", err)
 	}
@@ -77,7 +101,7 @@ func (sd *SessionData) GetArbiterByID(arbiterID int) (*Arbiter, error) {
 	}
 
 	for _, arbiter := range arbiters {
-		if arbiter.ID == arbiterID {
+		if arbiter.ArbiterId == fmt.Sprintf("%d", arbiterID) {
 			return &arbiter, nil
 		}
 	}
