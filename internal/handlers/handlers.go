@@ -189,6 +189,50 @@ func RegisterRoutes(r *gin.Engine) {
 
 		c.JSON(http.StatusOK, gin.H{"league": league})
 	})
+
+	// Prepare PDF data with arbiter and league from frontend
+	r.POST("/prepare-pdf-data", func(c *gin.Context) {
+		if sessionData == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
+			return
+		}
+
+		// Parse request body to get arbiter and league IDs
+		var requestBody struct {
+			ArbiterID int `json:"arbiterId"`
+			LeagueID  int `json:"leagueId"`
+		}
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Get arbiter by ID
+		arbiter, err := sessionData.GetArbiterByID(requestBody.ArbiterID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Arbiter not found: " + err.Error()})
+			return
+		}
+
+		// Get league by ID
+		league, err := sessionData.GetLeagueByID(requestBody.LeagueID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
+			return
+		}
+
+		// Prepare PDF data
+		pdfData := PreparePDFData(arbiter, league)
+
+		// Print the data to console
+		PrintPDFData(pdfData)
+
+		// Return the prepared data to frontend
+		c.JSON(http.StatusOK, gin.H{
+			"message": "PDF data prepared and printed to console",
+			"data":    pdfData,
+		})
+	})
 }
 
 // GetDataFromApi makes a simple HTTP GET request to an external API

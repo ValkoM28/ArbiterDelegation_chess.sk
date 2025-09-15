@@ -107,3 +107,154 @@ func fetchFromAPI(url string) (map[string]interface{}, error) {
 
 	return resultMap, nil
 }
+
+// PDFData represents the complete data structure for PDF generation
+type PDFData struct {
+	League        LeagueInfo   `json:"league"`
+	Director      DirectorInfo `json:"director"`
+	Arbiter       ArbiterInfo  `json:"arbiter"`
+	Match         MatchInfo    `json:"match"`
+	ContactPerson string       `json:"contactPerson"`
+}
+
+// LeagueInfo contains league-specific information
+type LeagueInfo struct {
+	Name string `json:"name"`
+	Year string `json:"year"`
+}
+
+// DirectorInfo contains director contact information (single string)
+type DirectorInfo struct {
+	Contact string `json:"contact"` // Combined name and contact info
+}
+
+// ArbiterInfo contains arbiter information for delegation
+type ArbiterInfo struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	PlayerID  string `json:"playerId"` // Using PlayerId instead of ArbiterId
+}
+
+// MatchInfo contains match-specific details
+type MatchInfo struct {
+	HomeTeam  string `json:"homeTeam"`
+	GuestTeam string `json:"guestTeam"`
+	DateTime  string `json:"dateTime"`
+	Address   string `json:"address"`
+}
+
+// NewPDFData creates a new PDFData instance with default values
+func NewPDFData() *PDFData {
+	return &PDFData{
+		League:        LeagueInfo{},
+		Director:      DirectorInfo{},
+		Arbiter:       ArbiterInfo{},
+		Match:         MatchInfo{},
+		ContactPerson: "",
+	}
+}
+
+// SetLeague sets the league information
+func (p *PDFData) SetLeague(league LeagueInfo) {
+	p.League = league
+}
+
+// SetDirector sets the director information
+func (p *PDFData) SetDirector(director DirectorInfo) {
+	p.Director = director
+}
+
+// SetArbiter sets the arbiter information
+func (p *PDFData) SetArbiter(arbiter ArbiterInfo) {
+	p.Arbiter = arbiter
+}
+
+// SetMatch sets the match information
+func (p *PDFData) SetMatch(match MatchInfo) {
+	p.Match = match
+}
+
+// SetContactPerson sets the contact person
+func (p *PDFData) SetContactPerson(contactPerson string) {
+	p.ContactPerson = contactPerson
+}
+
+// ToMap converts PDFData to a map[string]string for PDF form filling
+func (p *PDFData) ToMap() map[string]string {
+	result := make(map[string]string)
+
+	// Arbiter fields
+	result["arbiter_first_name"] = p.Arbiter.FirstName
+	result["arbiter_last_name"] = p.Arbiter.LastName
+	result["arbiter_id"] = p.Arbiter.PlayerID
+
+	// League fields
+	result["league_name"] = p.League.Name
+	result["league_year"] = p.League.Year
+
+	// Match fields
+	result["home_team"] = p.Match.HomeTeam
+	result["guest_team"] = p.Match.GuestTeam
+	result["date_time"] = p.Match.DateTime
+	result["address"] = p.Match.Address
+
+	// Director field (single combined string)
+	result["league_director_contact"] = p.Director.Contact
+
+	// Contact person
+	result["contact_person"] = p.ContactPerson
+
+	return result
+}
+
+// Validate checks if the PDFData has all required fields
+func (p *PDFData) Validate() error {
+	if p.League.Name == "" {
+		return fmt.Errorf("league name is required")
+	}
+	if p.League.Year == "" {
+		return fmt.Errorf("league year is required")
+	}
+	if p.Arbiter.FirstName == "" {
+		return fmt.Errorf("arbiter first name is required")
+	}
+	if p.Arbiter.LastName == "" {
+		return fmt.Errorf("arbiter last name is required")
+	}
+	if p.Arbiter.PlayerID == "" {
+		return fmt.Errorf("arbiter player ID is required")
+	}
+	if p.Director.Contact == "" {
+		return fmt.Errorf("league director contact is required")
+	}
+	return nil
+}
+
+// FromArbiter converts a chess Arbiter to ArbiterInfo
+func FromArbiter(arbiter Arbiter) ArbiterInfo {
+	return ArbiterInfo{
+		FirstName: arbiter.FirstName,
+		LastName:  arbiter.LastName,
+		PlayerID:  arbiter.PlayerId, // Using PlayerId instead of ArbiterId
+	}
+}
+
+// FromLeague converts a chess League to LeagueInfo and DirectorInfo
+func FromLeague(league League) (LeagueInfo, DirectorInfo) {
+	leagueInfo := LeagueInfo{
+		Name: league.LeagueName,
+		Year: league.SaisonName, // Assuming SaisonName contains the year
+	}
+
+	// Combine director name and email into a single contact string
+	directorContact := fmt.Sprintf("%s %s", league.DirectorFirstName, league.DirectorSurname)
+	if league.DirectorEmail != "" {
+		directorContact += fmt.Sprintf(" (%s)", league.DirectorEmail)
+	}
+
+	directorInfo := DirectorInfo{
+		Contact: directorContact,
+	}
+
+	return leagueInfo, directorInfo
+}
