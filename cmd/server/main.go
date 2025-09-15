@@ -2,19 +2,26 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// Serve static assets
-	fs := http.FileServer(http.Dir("web/assets"))
-	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
+	// Create Gin router
+	r := gin.Default()
 
-	// Serve frontend
-	http.HandleFunc("/", handlers.FrontendHandler)
+	// Serve static assets
+	r.Static("/assets", "./web/assets")
+
+	// Register API routes
+	handlers.RegisterRoutes(r)
+
+	// Serve frontend for root path
+	r.GET("/", func(c *gin.Context) {
+		c.File("web/index.html")
+	})
 
 	log.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(r.Run(":8080"))
 }
