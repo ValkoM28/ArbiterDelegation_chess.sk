@@ -316,15 +316,7 @@ async function onMatchArbiterSelected(roundIndex, matchIndex) {
 function preparePDFDataArray() {
     const leagueSelect = document.getElementById('leagueSelect');
     
-    // Get league info from the form
-    const directorData = document.getElementById('globalDirectorInfo').value.split('(');
-
-    const directorInfo = directorData[0];
-
-    const directorContact = directorData[1].slice(0, -1);
-    
-    // Get global info from rounds editor if available
-    const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value || directorInfo;
+    const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value;
     const globalContactPerson = document.getElementById('globalContactPerson')?.value || '';
     
     // Get league name from the selected option
@@ -384,7 +376,7 @@ function preparePDFDataArray() {
                     year: leagueYear
                 },
                 director: {
-                    contact: globalDirectorInfo || `${directorInfo} (${directorContact})`
+                    contact: globalDirectorInfo
                 },
                 arbiter: {
                     firstName: arbiterName.split(' ')[0] || '',
