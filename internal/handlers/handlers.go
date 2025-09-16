@@ -272,6 +272,91 @@ func RegisterRoutes(r *gin.Engine) {
 		})
 	})
 
+	// Get rounds data for a specific league
+	r.POST("/get-rounds", func(c *gin.Context) {
+		if sessionData == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
+			return
+		}
+
+		// Parse request body to get league ID
+		var requestBody struct {
+			LeagueID int `json:"leagueId"`
+		}
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Get league by ID
+		league, err := sessionData.GetLeagueByID(requestBody.LeagueID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
+			return
+		}
+
+		// Parse Excel file to get rounds
+		rounds, err := ParseExcelForLeagueToRounds(league)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse rounds: " + err.Error()})
+			return
+		}
+
+		// Store rounds in session data for later editing
+		sessionData.Set("current_rounds", rounds)
+
+		// Return rounds data
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Rounds data loaded successfully",
+			"rounds":  rounds,
+			"league":  league,
+		})
+	})
+
+	// Save edited rounds data
+	r.POST("/save-rounds", func(c *gin.Context) {
+		if sessionData == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
+			return
+		}
+
+		// Parse request body to get rounds data
+		var requestBody struct {
+			Rounds []data.Round `json:"rounds"`
+		}
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Store updated rounds in session data
+		sessionData.Set("current_rounds", requestBody.Rounds)
+
+		// Return success response
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Rounds data saved successfully",
+			"count":   len(requestBody.Rounds),
+		})
+	})
+
+	// Get current rounds data
+	r.GET("/current-rounds", func(c *gin.Context) {
+		if sessionData == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
+			return
+		}
+
+		rounds, exists := sessionData.Get("current_rounds")
+		if !exists {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No rounds data loaded"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"rounds": rounds,
+		})
+	})
+
 }
 
 // GetDataFromApi makes a simple HTTP GET request to an external API

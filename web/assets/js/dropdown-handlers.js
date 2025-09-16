@@ -164,6 +164,7 @@ function updatePreparePdfButtonState() {
     const leagueSelect = document.getElementById('leagueSelect');
     const preparePdfBtn = document.getElementById('preparePdfBtn');
     const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+    const loadRoundsBtn = document.getElementById('loadRoundsBtn');
     
     // Enable buttons only if both arbiter and league are selected
     if (arbiterSelect.value && leagueSelect.value) {
@@ -171,10 +172,16 @@ function updatePreparePdfButtonState() {
         if (downloadExcelBtn) {
             downloadExcelBtn.disabled = false;
         }
+        if (loadRoundsBtn) {
+            loadRoundsBtn.disabled = false;
+        }
     } else {
         preparePdfBtn.disabled = true;
         if (downloadExcelBtn) {
             downloadExcelBtn.disabled = true;
+        }
+        if (loadRoundsBtn) {
+            loadRoundsBtn.disabled = true;
         }
     }
 }
@@ -223,3 +230,4 @@ async function downloadExcelFile() {
         downloadBtn.textContent = 'Download Excel File';
     }
 }
+
