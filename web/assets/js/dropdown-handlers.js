@@ -86,6 +86,3 @@ async function fetchLeagueDetails(leagueId) {
         directorContactField.value = 'Error loading data';
     }
 }
-
-
-

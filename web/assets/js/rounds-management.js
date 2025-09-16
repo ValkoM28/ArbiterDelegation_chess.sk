@@ -385,16 +385,28 @@ function preparePDFDataArray() {
     
     // Get league info from the form
     const directorInfo = document.getElementById('directorField').value;
+    const directorContact = document.getElementById('directorContactField').value;
     
     // Get global info from rounds editor if available
     const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value || directorInfo;
     const globalContactPerson = document.getElementById('globalContactPerson')?.value || '';
+    
+    // Get league name from the selected option
+    const selectedLeagueOption = leagueSelect.options[leagueSelect.selectedIndex];
+    const leagueName = selectedLeagueOption ? selectedLeagueOption.textContent.split(' (')[0] : '';
+    const leagueYear = selectedLeagueOption ? selectedLeagueOption.textContent.match(/\((.+?)\)/)?.[1] || '' : '';
     
     const pdfDataArray = [];
     
     // Create PDFData for each match
     currentRounds.forEach((round, roundIndex) => {
         round.matches.forEach((match, matchIndex) => {
+            // Get current form data (including any user edits)
+            const homeTeam = document.getElementById(`round_${roundIndex}_match_${matchIndex}_home`)?.value || match.homeTeam;
+            const guestTeam = document.getElementById(`round_${roundIndex}_match_${matchIndex}_guest`)?.value || match.guestTeam;
+            const dateTime = document.getElementById(`round_${roundIndex}_match_${matchIndex}_datetime`)?.value || match.dateTime;
+            const address = document.getElementById(`round_${roundIndex}_match_${matchIndex}_address`)?.value || match.address;
+            
             // Get arbiter info from the match's arbiter dropdown
             const arbiterSelect = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
             const selectedArbiterId = arbiterSelect ? arbiterSelect.value : '';
@@ -414,13 +426,26 @@ function preparePDFDataArray() {
                 }
             }
             
+            // If no arbiter details found, try to get from dropdown selection
+            if (!arbiterName && selectedArbiterId) {
+                const selectedArbiterOption = arbiterSelect.options[arbiterSelect.selectedIndex];
+                if (selectedArbiterOption) {
+                    const optionText = selectedArbiterOption.textContent;
+                    const arbiterMatch = optionText.match(/^(.+?) \((.+?)\)$/);
+                    if (arbiterMatch) {
+                        arbiterName = arbiterMatch[1];
+                        arbiterId = selectedArbiterId;
+                    }
+                }
+            }
+            
             const pdfData = {
                 league: {
-                    name: '', // Will be filled from league data
-                    year: ''  // Will be filled from league data
+                    name: leagueName,
+                    year: leagueYear
                 },
                 director: {
-                    contact: globalDirectorInfo
+                    contact: globalDirectorInfo || `${directorInfo} (${directorContact})`
                 },
                 arbiter: {
                     firstName: arbiterName.split(' ')[0] || '',
@@ -428,10 +453,10 @@ function preparePDFDataArray() {
                     playerId: arbiterId
                 },
                 match: {
-                    homeTeam: match.homeTeam,
-                    guestTeam: match.guestTeam,
-                    dateTime: match.dateTime,
-                    address: match.address
+                    homeTeam: homeTeam,
+                    guestTeam: guestTeam,
+                    dateTime: dateTime,
+                    address: address
                 },
                 contactPerson: globalContactPerson
             };
@@ -441,4 +466,63 @@ function preparePDFDataArray() {
     });
     
     return pdfDataArray;
+}
+
+// Prepare delegation data and send to backend
+async function prepareDelegationData() {
+    const leagueSelect = document.getElementById('leagueSelect');
+    const roundsStatus = document.getElementById('roundsStatus');
+    
+    if (!leagueSelect.value) {
+        roundsStatus.innerHTML = '<span class="text-red-600">✗ Please select a league first</span>';
+        return;
+    }
+    
+    if (!currentRounds || currentRounds.length === 0) {
+        roundsStatus.innerHTML = '<span class="text-red-600">✗ Please load rounds data first</span>';
+        return;
+    }
+    
+    try {
+        // Prepare PDFData array from current rounds data
+        const pdfDataArray = preparePDFDataArray();
+        
+        // Validate that we have data
+        if (pdfDataArray.length === 0) {
+            roundsStatus.innerHTML = '<span class="text-red-600">✗ No match data found</span>';
+            return;
+        }
+        
+        // Check if all matches have arbiters assigned (for testing, we'll allow missing arbiters)
+        const missingArbiters = pdfDataArray.filter(data => !data.arbiter.firstName || !data.arbiter.lastName);
+        if (missingArbiters.length > 0) {
+            console.log(`Warning: ${missingArbiters.length} matches missing arbiter assignment - proceeding anyway for testing`);
+        }
+        
+        // Send to backend
+        const response = await fetch('/delegate-arbiters', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(pdfDataArray)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Delegation data sent:', result);
+        
+        roundsStatus.innerHTML = `
+            <span class="text-green-600">✓ ${result.message}</span><br>
+            <span class="text-sm text-gray-600">Count: ${result.count} items</span><br>
+            <span class="text-sm text-gray-600">Check server console for detailed output</span>
+        `;
+        
+    } catch (error) {
+        console.error('Error preparing delegation data:', error);
+        roundsStatus.innerHTML = `<span class="text-red-600">✗ Error: ${error.message}</span>`;
+    }
 }
