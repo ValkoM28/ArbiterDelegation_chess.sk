@@ -113,43 +113,60 @@ function displayRoundsEditor() {
         // Add each match in the round
         round.matches.forEach((match, matchIndex) => {
             html += `
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 bg-gray-50 rounded">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Home Team</label>
-                        <input 
-                            type="text" 
-                            id="round_${roundIndex}_match_${matchIndex}_home" 
-                            value="${match.homeTeam}"
-                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
+                <div class="p-3 bg-gray-50 rounded border">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Home Team</label>
+                            <input 
+                                type="text" 
+                                id="round_${roundIndex}_match_${matchIndex}_home" 
+                                value="${match.homeTeam}"
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Guest Team</label>
+                            <input 
+                                type="text" 
+                                id="round_${roundIndex}_match_${matchIndex}_guest" 
+                                value="${match.guestTeam}"
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Date & Time</label>
+                            <input 
+                                type="text" 
+                                id="round_${roundIndex}_match_${matchIndex}_datetime" 
+                                value="${match.dateTime}"
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                            <input 
+                                type="text" 
+                                id="round_${roundIndex}_match_${matchIndex}_address" 
+                                value="${match.address}"
+                                placeholder="Enter address"
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Guest Team</label>
-                        <input 
-                            type="text" 
-                            id="round_${roundIndex}_match_${matchIndex}_guest" 
-                            value="${match.guestTeam}"
+                    
+                    <!-- Match Arbiter Selection -->
+                    <div class="mt-3 p-2 bg-blue-50 rounded">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Arbiter for this Match:</label>
+                        <select 
+                            id="round_${roundIndex}_match_${matchIndex}_arbiter" 
                             class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Date & Time</label>
-                        <input 
-                            type="text" 
-                            id="round_${roundIndex}_match_${matchIndex}_datetime" 
-                            value="${match.dateTime}"
-                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
-                        <input 
-                            type="text" 
-                            id="round_${roundIndex}_match_${matchIndex}_address" 
-                            value="${match.address}"
-                            placeholder="Enter address"
-                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
+                            onchange="onMatchArbiterSelected(${roundIndex}, ${matchIndex})"
+                        >
+                            <option value="">Select an arbiter for this match...</option>
+                        </select>
+                        <div id="round_${roundIndex}_match_${matchIndex}_arbiter_details" class="mt-1 text-xs text-gray-600 hidden">
+                            <!-- Arbiter details will be shown here -->
+                        </div>
                     </div>
                 </div>
             `;
@@ -183,6 +200,9 @@ function displayRoundsEditor() {
     `;
 
     roundsContainer.innerHTML = html;
+    
+    // Populate arbiter dropdowns for all matches
+    populateMatchArbiterDropdowns();
 }
 
 // Save rounds data
@@ -298,5 +318,63 @@ async function loadRoundsForCurrentLeague() {
     } finally {
         loadRoundsBtn.disabled = false;
         loadRoundsBtn.textContent = 'Load & Edit Rounds';
+    }
+}
+
+// Populate arbiter dropdowns for all matches
+async function populateMatchArbiterDropdowns() {
+    try {
+        // Get arbiters data
+        const response = await fetch('/arbiters');
+        const data = await response.json();
+        
+        if (data.arbiters && data.arbiters.length > 0) {
+            // Populate all match arbiter dropdowns
+            currentRounds.forEach((round, roundIndex) => {
+                round.matches.forEach((match, matchIndex) => {
+                    const selectElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
+                    if (selectElement) {
+                        // Clear existing options except the first one
+                        selectElement.innerHTML = '<option value="">Select an arbiter for this match...</option>';
+                        
+                        // Add arbiter options
+                        data.arbiters.forEach(arbiter => {
+                            const option = document.createElement('option');
+                            option.value = arbiter.ArbiterId;
+                            option.textContent = `${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})`;
+                            selectElement.appendChild(option);
+                        });
+                    }
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Error loading arbiters for match dropdowns:', error);
+    }
+}
+
+// Handle arbiter selection for a specific match
+async function onMatchArbiterSelected(roundIndex, matchIndex) {
+    const selectElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
+    const detailsElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
+    
+    if (selectElement.value) {
+        try {
+            const response = await fetch(`/arbiters/${selectElement.value}`);
+            const data = await response.json();
+            
+            if (data.arbiter) {
+                detailsElement.innerHTML = `
+                    <strong>Selected:</strong> ${data.arbiter.FirstName} ${data.arbiter.LastName} (ID: ${data.arbiter.PlayerId})
+                `;
+                detailsElement.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error fetching arbiter details:', error);
+            detailsElement.innerHTML = '<span class="text-red-600">Error loading arbiter details</span>';
+            detailsElement.classList.remove('hidden');
+        }
+    } else {
+        detailsElement.classList.add('hidden');
     }
 }
