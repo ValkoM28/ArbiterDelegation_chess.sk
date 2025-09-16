@@ -141,13 +141,23 @@ function displayRoundsEditor() {
                     <!-- Match Arbiter Selection -->
                     <div class="mt-3 p-2 bg-blue-50 rounded">
                         <label class="block text-xs font-medium text-gray-600 mb-1">Delegovaný rozhodca:</label>
-                        <select 
-                            id="round_${roundIndex}_match_${matchIndex}_arbiter" 
-                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            onchange="onMatchArbiterSelected(${roundIndex}, ${matchIndex})"
-                        >
-                            <option value="">Select an arbiter for this match...</option>
-                        </select>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="round_${roundIndex}_match_${matchIndex}_arbiter_search" 
+                                placeholder="Hľadaj podľa priezviska..."
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                oninput="filterArbiters(${roundIndex}, ${matchIndex})"
+                                onfocus="showArbiterDropdown(${roundIndex}, ${matchIndex})"
+                                onblur="hideArbiterDropdown(${roundIndex}, ${matchIndex})"
+                            />
+                            <div 
+                                id="round_${roundIndex}_match_${matchIndex}_arbiter_dropdown" 
+                                class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"
+                            >
+                                <!-- Arbiter options will be populated here -->
+                            </div>
+                        </div>
                         <div id="round_${roundIndex}_match_${matchIndex}_arbiter_details" class="mt-1 text-xs text-gray-600 hidden">
                             <!-- Arbiter details will be shown here -->
                         </div>
@@ -271,21 +281,16 @@ async function populateMatchArbiterDropdowns() {
         const data = await response.json();
         
         if (data.arbiters && data.arbiters.length > 0) {
+            // Store arbiters globally for filtering
+            window.allArbiters = data.arbiters;
+            
             // Populate all match arbiter dropdowns
             currentRounds.forEach((round, roundIndex) => {
                 round.matches.forEach((match, matchIndex) => {
-                    const selectElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
-                    if (selectElement) {
-                        // Clear existing options except the first one
-                        selectElement.innerHTML = '<option value="">Select an arbiter for this match...</option>';
-                        
-                        // Add arbiter options
-                        data.arbiters.forEach(arbiter => {
-                            const option = document.createElement('option');
-                            option.value = arbiter.ArbiterId;
-                            option.textContent = `${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})${arbiter.KlubName ? ` - ${arbiter.KlubName}` : ''}`;
-                            selectElement.appendChild(option);
-                        });
+                    const dropdownElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+                    if (dropdownElement) {
+                        // Populate dropdown with all arbiters initially
+                        populateArbiterDropdown(roundIndex, matchIndex, data.arbiters);
                     }
                 });
             });
@@ -295,7 +300,116 @@ async function populateMatchArbiterDropdowns() {
     }
 }
 
-// Handle arbiter selection for a specific match
+// Populate arbiter dropdown with given arbiters list
+function populateArbiterDropdown(roundIndex, matchIndex, arbiters) {
+    const dropdownElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    if (!dropdownElement) return;
+    
+    // Clear existing options
+    dropdownElement.innerHTML = '';
+    
+    // Sort arbiters by last name first, then first name
+    const sortedArbiters = arbiters.sort((a, b) => {
+        const aName = `${a.LastName} ${a.FirstName}`.toLowerCase();
+        const bName = `${b.LastName} ${b.FirstName}`.toLowerCase();
+        return aName.localeCompare(bName);
+    });
+    
+    // Add arbiter options
+    sortedArbiters.forEach(arbiter => {
+        const option = document.createElement('div');
+        option.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
+        option.textContent = `${arbiter.LastName} ${arbiter.FirstName} (${arbiter.ArbiterLevel})${arbiter.KlubName ? ` - ${arbiter.KlubName}` : ''}`;
+        option.onclick = () => selectArbiter(roundIndex, matchIndex, arbiter);
+        dropdownElement.appendChild(option);
+    });
+}
+
+// Show arbiter dropdown
+function showArbiterDropdown(roundIndex, matchIndex) {
+    const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    if (dropdown) {
+        dropdown.classList.remove('hidden');
+    }
+}
+
+// Hide arbiter dropdown
+function hideArbiterDropdown(roundIndex, matchIndex) {
+    // Add a small delay to allow clicking on options
+    setTimeout(() => {
+        const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+        if (dropdown) {
+            dropdown.classList.add('hidden');
+        }
+    }, 200);
+}
+
+// Normalize text by removing diacritics and converting to lowercase
+function normalizeText(text) {
+    return text
+        .toLowerCase()
+        .normalize('NFD') // Decompose characters with diacritics
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritic marks
+        .replace(/[^\w\s]/g, '') // Remove special characters except letters, numbers, and spaces
+        .trim();
+}
+
+// Filter arbiters based on search input
+function filterArbiters(roundIndex, matchIndex) {
+    const searchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+    const searchTerm = normalizeText(searchInput.value);
+    
+    if (!window.allArbiters) return;
+    
+    // Filter arbiters by last name first, then first name
+    const filteredArbiters = window.allArbiters.filter(arbiter => {
+        const fullName = normalizeText(`${arbiter.LastName} ${arbiter.FirstName}`);
+        const clubName = arbiter.KlubName ? normalizeText(arbiter.KlubName) : '';
+        return fullName.includes(searchTerm) || clubName.includes(searchTerm);
+    });
+    
+    populateArbiterDropdown(roundIndex, matchIndex, filteredArbiters);
+    
+    // Show dropdown if there are results
+    const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    if (dropdown) {
+        dropdown.classList.remove('hidden');
+    }
+}
+
+// Select an arbiter
+function selectArbiter(roundIndex, matchIndex, arbiter) {
+    const searchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+    const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    
+    // Update search input with selected arbiter
+    searchInput.value = `${arbiter.LastName} ${arbiter.FirstName} (${arbiter.ArbiterLevel})${arbiter.KlubName ? ` - ${arbiter.KlubName}` : ''}`;
+    
+    // Hide dropdown
+    dropdown.classList.add('hidden');
+    
+    // Store selected arbiter ID for later use
+    searchInput.setAttribute('data-arbiter-id', arbiter.ArbiterId);
+    
+    // Show arbiter details
+    showArbiterDetails(roundIndex, matchIndex, arbiter);
+}
+
+// Show arbiter details
+async function showArbiterDetails(roundIndex, matchIndex, arbiter) {
+    const detailsElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
+    if (detailsElement) {
+        const clubInfo = arbiter.KlubName ? ` - ${arbiter.KlubName}` : '';
+        detailsElement.innerHTML = `
+            <div class="text-xs text-gray-600">
+                <strong>${arbiter.LastName} ${arbiter.FirstName}</strong> (${arbiter.ArbiterLevel})${clubInfo}
+            </div>
+        `;
+        detailsElement.classList.remove('hidden');
+    }
+}
+
+// Handle arbiter selection for a specific match (legacy function - keeping for compatibility)
 async function onMatchArbiterSelected(roundIndex, matchIndex) {
     const selectElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
     const detailsElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
@@ -345,9 +459,9 @@ function preparePDFDataArray() {
             const dateTime = document.getElementById(`round_${roundIndex}_match_${matchIndex}_datetime`)?.value || match.dateTime;
             const address = document.getElementById(`round_${roundIndex}_match_${matchIndex}_address`)?.value || match.address;
             
-            // Get arbiter info from the match's arbiter dropdown
-            const arbiterSelect = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
-            const selectedArbiterId = arbiterSelect ? arbiterSelect.value : '';
+            // Get arbiter info from the searchable input
+            const arbiterSearchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+            const selectedArbiterId = arbiterSearchInput ? arbiterSearchInput.getAttribute('data-arbiter-id') : '';
             
             // Get arbiter details from the details element
             const arbiterDetails = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
@@ -356,27 +470,30 @@ function preparePDFDataArray() {
             let arbiterClubName = '';
             
             if (arbiterDetails && arbiterDetails.textContent) {
-                // Extract name, ID, and club from the details text
+                // Extract name from the details text (format: "LastName FirstName (Level) - Club")
                 const detailsText = arbiterDetails.textContent;
-                const nameMatch = detailsText.match(/Selected: (.+?) \(ID: (.+?)\)(?: - (.+))?$/);
+                const nameMatch = detailsText.match(/<strong>(.+?)<\/strong>/);
                 if (nameMatch) {
                     arbiterName = nameMatch[1];
-                    arbiterId = nameMatch[2];
-                    arbiterClubName = nameMatch[3] || '';
+                    arbiterId = selectedArbiterId;
+                    
+                    // Extract club name if present
+                    const clubMatch = detailsText.match(/- (.+?)<\/div>/);
+                    if (clubMatch) {
+                        arbiterClubName = clubMatch[1];
+                    }
                 }
             }
             
-            // If no arbiter details found, try to get from dropdown selection
-            if (!arbiterName && selectedArbiterId) {
-                const selectedArbiterOption = arbiterSelect.options[arbiterSelect.selectedIndex];
-                if (selectedArbiterOption) {
-                    const optionText = selectedArbiterOption.textContent;
-                    // Updated regex to handle club name in the format: "Name (Level) - Club"
-                    const arbiterMatch = optionText.match(/^(.+?) \((.+?)\)(?: - (.+))?$/);
-                    if (arbiterMatch) {
-                        arbiterName = arbiterMatch[1];
-                        arbiterId = selectedArbiterId;
-                    }
+            // If no arbiter details found, try to get from search input
+            if (!arbiterName && arbiterSearchInput && arbiterSearchInput.value) {
+                const inputValue = arbiterSearchInput.value;
+                // Parse the format: "LastName FirstName (Level) - Club"
+                const arbiterMatch = inputValue.match(/^(.+?) \((.+?)\)(?: - (.+))?$/);
+                if (arbiterMatch) {
+                    arbiterName = arbiterMatch[1];
+                    arbiterId = selectedArbiterId;
+                    arbiterClubName = arbiterMatch[3] || '';
                 }
             }
             
