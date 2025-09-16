@@ -195,6 +195,122 @@ func PrintMatches(matches []data.MatchInfo) {
 		fmt.Printf("  Guest Team: %s\n", match.GuestTeam)
 		fmt.Printf("  Date/Time: %s\n", match.DateTime)
 		fmt.Printf("  Address: %s\n", match.Address)
-		fmt.Println('-' * 40)
+		fmt.Println(strings.Repeat("-", 40))
+	}
+}
+
+// ParseChessResultsExcelToRounds parses an Excel file and returns rounds with matches
+func ParseChessResultsExcelToRounds(filePath string) ([]data.Round, error) {
+	// Open the Excel file
+	f, err := excelize.OpenFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open Excel file: %v", err)
+	}
+	defer f.Close()
+
+	// Get the first sheet name
+	sheetName := f.GetSheetName(0)
+	if sheetName == "" {
+		return nil, fmt.Errorf("no sheets found in Excel file")
+	}
+
+	// Get all rows from the sheet
+	rows, err := f.GetRows(sheetName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows from sheet: %v", err)
+	}
+
+	var rounds []data.Round
+	var currentRound *data.Round
+
+	for _, row := range rows {
+		if len(row) == 0 {
+			continue
+		}
+
+		// Check if this is a round header (e.g., "Round 1 on 2025/10/25 at 11:00")
+		if strings.HasPrefix(row[0], "Round ") && strings.Contains(row[0], " on ") {
+			// If we have a previous round, add it to the rounds slice
+			if currentRound != nil {
+				rounds = append(rounds, *currentRound)
+			}
+
+			// Extract round number, date and time from round header
+			re := regexp.MustCompile(`Round (\d+) on (\d{4}/\d{2}/\d{2}) at (\d{2}:\d{2})`)
+			matches := re.FindStringSubmatch(row[0])
+			if len(matches) >= 4 {
+				roundNumber, _ := strconv.Atoi(matches[1])
+				dateTime := fmt.Sprintf("%s %s", matches[2], matches[3])
+
+				currentRound = &data.Round{
+					Number:   roundNumber,
+					DateTime: dateTime,
+					Matches:  []data.MatchInfo{},
+				}
+			}
+			continue
+		}
+
+		// Check if this is a match row (starts with a number and has two team names)
+		if len(row) >= 3 && isNumeric(row[0]) && row[1] != "" && row[2] != "" {
+			// Skip the header row "No.,Team,Team,Res.,:,Res."
+			if row[1] == "Team" && row[2] == "Team" {
+				continue
+			}
+
+			// Only add match if we have a current round
+			if currentRound != nil {
+				match := data.MatchInfo{
+					HomeTeam:  strings.TrimSpace(row[1]),
+					GuestTeam: strings.TrimSpace(row[2]),
+					DateTime:  currentRound.DateTime,
+					Address:   "", // Address not available in this Excel format
+				}
+
+				currentRound.Matches = append(currentRound.Matches, match)
+			}
+		}
+	}
+
+	// Add the last round if it exists
+	if currentRound != nil {
+		rounds = append(rounds, *currentRound)
+	}
+
+	return rounds, nil
+}
+
+// ParseExcelForLeagueToRounds downloads and parses Excel file for a given league, returning rounds
+func ParseExcelForLeagueToRounds(league *data.League) ([]data.Round, error) {
+	// Download the Excel file
+	filePath, err := DownloadExcelForLeague(league)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download Excel file: %v", err)
+	}
+
+	// Parse the Excel file
+	rounds, err := ParseChessResultsExcelToRounds(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Excel file: %v", err)
+	}
+
+	PrintRounds(rounds)
+	return rounds, nil
+}
+
+// PrintRounds prints the parsed rounds data for debugging
+func PrintRounds(rounds []data.Round) {
+	fmt.Printf("Found %d rounds:\n", len(rounds))
+	fmt.Println(strings.Repeat("=", 80))
+
+	for _, round := range rounds {
+		fmt.Printf("Round %d - %s\n", round.Number, round.DateTime)
+		fmt.Printf("  Matches: %d\n", len(round.Matches))
+		fmt.Println(strings.Repeat("-", 40))
+
+		for i, match := range round.Matches {
+			fmt.Printf("  Match %d: %s vs %s\n", i+1, match.HomeTeam, match.GuestTeam)
+		}
+		fmt.Println()
 	}
 }

@@ -258,7 +258,7 @@ func RegisterRoutes(r *gin.Engine) {
 		}
 
 		// Download Excel file for the league
-		filePath, err := ParseExcelForLeague(league)
+		filePath, err := ParseExcelForLeagueToRounds(league)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to download Excel file: " + err.Error()})
 			return
