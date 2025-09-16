@@ -317,8 +317,11 @@ function preparePDFDataArray() {
     const leagueSelect = document.getElementById('leagueSelect');
     
     // Get league info from the form
-    const directorInfo = document.getElementById('directorField').value;
-    const directorContact = document.getElementById('directorContactField').value;
+    const directorData = document.getElementById('globalDirectorInfo').value.split('(');
+
+    const directorInfo = directorData[0];
+
+    const directorContact = directorData[1].slice(0, -1);
     
     // Get global info from rounds editor if available
     const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value || directorInfo;

@@ -23,8 +23,6 @@ async function loadExternalData() {
         if (response.ok) {
             status.innerHTML = `
                 <span class="text-green-600">✓ ${result.message}</span><br>
-                <span class="text-sm">Arbiters: ${result.arbiters_loaded ? 'Loaded' : 'Not loaded'}</span><br>
-                <span class="text-sm">Leagues: ${result.leagues_loaded ? 'Loaded' : 'Not loaded'}</span>
             `;
             
             // Show data preview and populate dropdowns
@@ -49,34 +47,20 @@ async function showDataPreview() {
     const leaguesPreview = document.getElementById('leaguesPreview');
     
     try {
-        // Fetch arbiters data
         const arbitersResponse = await fetch('/arbiters');
         const arbitersData = await arbitersResponse.json();
         
         if (arbitersData.arbiters && arbitersData.arbiters.length > 0) {
-            const firstFew = arbitersData.arbiters.slice(0, 3);
-            arbitersPreview.innerHTML = firstFew.map(arbiter => 
-                `<div>• ${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})</div>`
-            ).join('');
-            if (arbitersData.arbiters.length > 3) {
-                arbitersPreview.innerHTML += `<div class="text-gray-400">... and ${arbitersData.arbiters.length - 3} more</div>`;
-            }
+            arbitersPreview.innerHTML = `<div class="text-green-600 font-medium">Loaded ${arbitersData.arbiters.length} active arbiters</div>`;
         } else {
             arbitersPreview.innerHTML = '<div class="text-gray-400">No arbiters data</div>';
         }
 
-        // Fetch leagues data
         const leaguesResponse = await fetch('/leagues');
         const leaguesData = await leaguesResponse.json();
         
         if (leaguesData.leagues && leaguesData.leagues.length > 0) {
-            const firstFew = leaguesData.leagues.slice(0, 3);
-            leaguesPreview.innerHTML = firstFew.map(league => 
-                `<div>• ${league.leagueName} (${league.saisonName})</div>`
-            ).join('');
-            if (leaguesData.leagues.length > 3) {
-                leaguesPreview.innerHTML += `<div class="text-gray-400">... and ${leaguesData.leagues.length - 3} more</div>`;
-            }
+            leaguesPreview.innerHTML = `<div class="text-green-600 font-medium">Loaded ${leaguesData.leagues.length} leagues</div>`;
         } else {
             leaguesPreview.innerHTML = '<div class="text-gray-400">No leagues data</div>';
         }
@@ -115,5 +99,29 @@ async function populateLeagueDropdown() {
     } catch (error) {
         console.error('Error loading leagues:', error);
         leagueSelect.innerHTML = '<option value="">Error loading leagues</option>';
+    }
+}
+
+
+async function onLeagueSelected() {
+    const leagueSelect = document.getElementById('leagueSelect');
+    const presetFields = document.getElementById('presetFields');
+    const prepareDelegationBtn = document.getElementById('prepareDelegationBtn');
+    
+    if (leagueSelect.value) {
+        // Show preset fields
+        presetFields.classList.remove('hidden');
+        
+        // Automatically load rounds data
+        try {
+            await loadRoundsData(parseInt(leagueSelect.value));
+            prepareDelegationBtn.disabled = false;
+        } catch (error) {
+            console.error('Error loading rounds data:', error);
+        }
+    } else {
+        // Hide preset fields
+        presetFields.classList.add('hidden');
+        prepareDelegationBtn.disabled = true;
     }
 }
