@@ -40,13 +40,16 @@ func RegisterRoutes(r *gin.Engine) {
 	})
 
 	r.GET("/list-fields", func(c *gin.Context) {
-		err := pdf.ListFillableFields("templates/delegacny_list_ligy.pdf")
+		fieldNames, err := pdf.ListFillableFields("templates/delegacny_list_ligy.pdf")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Fields listed to console. Check server logs for details."})
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Fields listed successfully",
+			"fields":  fieldNames,
+		})
 	})
 
 	// Load external data button endpoint
@@ -328,10 +331,55 @@ func RegisterRoutes(r *gin.Engine) {
 		// Prepare data for function call
 		printPDFDataArray(requestBody)
 
+		// Convert PDFData array to interface{} array for PDF generation
+		var pdfDataArray []interface{}
+		for _, pdfData := range requestBody {
+			// Convert PDFData to map[string]interface{}
+			pdfMap := make(map[string]interface{})
+
+			// Convert arbiter
+			arbiterMap := make(map[string]interface{})
+			arbiterMap["firstName"] = pdfData.Arbiter.FirstName
+			arbiterMap["lastName"] = pdfData.Arbiter.LastName
+			arbiterMap["playerId"] = pdfData.Arbiter.PlayerID
+			pdfMap["arbiter"] = arbiterMap
+
+			// Convert league
+			leagueMap := make(map[string]interface{})
+			leagueMap["name"] = pdfData.League.Name
+			leagueMap["year"] = pdfData.League.Year
+			pdfMap["league"] = leagueMap
+
+			// Convert match
+			matchMap := make(map[string]interface{})
+			matchMap["homeTeam"] = pdfData.Match.HomeTeam
+			matchMap["guestTeam"] = pdfData.Match.GuestTeam
+			matchMap["dateTime"] = pdfData.Match.DateTime
+			matchMap["address"] = pdfData.Match.Address
+			pdfMap["match"] = matchMap
+
+			// Convert director
+			directorMap := make(map[string]interface{})
+			directorMap["contact"] = pdfData.Director.Contact
+			pdfMap["director"] = directorMap
+
+			// Add contact person
+			pdfMap["contactPerson"] = pdfData.ContactPerson
+
+			pdfDataArray = append(pdfDataArray, pdfMap)
+		}
+
+		// Generate PDFs
+		generatedFiles, err := pdf.GeneratePDFsFromDelegateArbiters(pdfDataArray, "templates/delegacny_list_ligy.pdf")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate PDFs: " + err.Error()})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"message": "PDFData array prepared for function call",
-			"count":   len(requestBody),
-			"ready":   true,
+			"message":        "PDFs generated successfully",
+			"count":          len(requestBody),
+			"generatedFiles": generatedFiles,
 		})
 	})
 }
