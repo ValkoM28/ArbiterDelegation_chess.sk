@@ -133,6 +133,7 @@ type ArbiterInfo struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	PlayerID  string `json:"playerId"` // Using PlayerId instead of ArbiterId
+	ClubName  string `json:"clubName"` // Club name from the arbiter data (for display purposes)
 }
 
 // MatchInfo contains match-specific details
@@ -249,6 +250,7 @@ func FromArbiter(arbiter Arbiter) ArbiterInfo {
 		FirstName: arbiter.FirstName,
 		LastName:  arbiter.LastName,
 		PlayerID:  arbiter.PlayerId, // Using PlayerId instead of ArbiterId
+		ClubName:  arbiter.KlubName, // Include club name from the arbiter data
 	}
 }
 

@@ -273,7 +273,7 @@ async function populateMatchArbiterDropdowns() {
                         data.arbiters.forEach(arbiter => {
                             const option = document.createElement('option');
                             option.value = arbiter.ArbiterId;
-                            option.textContent = `${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})`;
+                            option.textContent = `${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})${arbiter.KlubName ? ` - ${arbiter.KlubName}` : ''}`;
                             selectElement.appendChild(option);
                         });
                     }
@@ -296,8 +296,9 @@ async function onMatchArbiterSelected(roundIndex, matchIndex) {
             const data = await response.json();
             
             if (data.arbiter) {
+                const clubInfo = data.arbiter.KlubName ? ` - ${data.arbiter.KlubName}` : '';
                 detailsElement.innerHTML = `
-                    <strong>Selected:</strong> ${data.arbiter.FirstName} ${data.arbiter.LastName} (ID: ${data.arbiter.PlayerId})
+                    <strong>Selected:</strong> ${data.arbiter.FirstName} ${data.arbiter.LastName} (ID: ${data.arbiter.PlayerId})${clubInfo}
                 `;
                 detailsElement.classList.remove('hidden');
             }
@@ -347,14 +348,16 @@ function preparePDFDataArray() {
             const arbiterDetails = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
             let arbiterName = '';
             let arbiterId = '';
+            let arbiterClubName = '';
             
             if (arbiterDetails && arbiterDetails.textContent) {
-                // Extract name and ID from the details text
+                // Extract name, ID, and club from the details text
                 const detailsText = arbiterDetails.textContent;
-                const nameMatch = detailsText.match(/Selected: (.+?) \(ID: (.+?)\)/);
+                const nameMatch = detailsText.match(/Selected: (.+?) \(ID: (.+?)\)(?: - (.+))?$/);
                 if (nameMatch) {
                     arbiterName = nameMatch[1];
                     arbiterId = nameMatch[2];
+                    arbiterClubName = nameMatch[3] || '';
                 }
             }
             
@@ -363,7 +366,8 @@ function preparePDFDataArray() {
                 const selectedArbiterOption = arbiterSelect.options[arbiterSelect.selectedIndex];
                 if (selectedArbiterOption) {
                     const optionText = selectedArbiterOption.textContent;
-                    const arbiterMatch = optionText.match(/^(.+?) \((.+?)\)$/);
+                    // Updated regex to handle club name in the format: "Name (Level) - Club"
+                    const arbiterMatch = optionText.match(/^(.+?) \((.+?)\)(?: - (.+))?$/);
                     if (arbiterMatch) {
                         arbiterName = arbiterMatch[1];
                         arbiterId = selectedArbiterId;
@@ -382,7 +386,8 @@ function preparePDFDataArray() {
                 arbiter: {
                     firstName: arbiterName.split(' ')[0] || '',
                     lastName: arbiterName.split(' ').slice(1).join(' ') || '',
-                    playerId: arbiterId
+                    playerId: arbiterId,
+                    clubName: '' // just because of the updated ArbiterInfo in backend it wont run without this line :D 
                 },
                 match: {
                     homeTeam: homeTeam,

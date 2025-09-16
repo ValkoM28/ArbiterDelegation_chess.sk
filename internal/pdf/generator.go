@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
@@ -58,6 +59,12 @@ func FillForm(pdfPath string, data map[string]string) (string, error) {
 
 	// Generate unique output filename with microsecond precision
 	outputPath := fmt.Sprintf("assets/results/delegacny_%d_%d.pdf", time.Now().Unix(), time.Now().Nanosecond())
+
+	// Ensure the results directory exists
+	resultsDir := "assets/results"
+	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create results directory: %v", err)
+	}
 
 	// Write the filled PDF
 	err = api.WriteContextFile(ctx, outputPath)
