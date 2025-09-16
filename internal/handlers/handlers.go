@@ -233,6 +233,45 @@ func RegisterRoutes(r *gin.Engine) {
 			"data":    pdfData,
 		})
 	})
+
+	// Download Excel file for a specific league
+	r.POST("/download-excel", func(c *gin.Context) {
+		if sessionData == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
+			return
+		}
+
+		// Parse request body to get league ID
+		var requestBody struct {
+			LeagueID int `json:"leagueId"`
+		}
+		if err := c.BindJSON(&requestBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Get league by ID
+		league, err := sessionData.GetLeagueByID(requestBody.LeagueID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
+			return
+		}
+
+		// Download Excel file for the league
+		filePath, err := ParseExcelForLeagueToRounds(league)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to download Excel file: " + err.Error()})
+			return
+		}
+
+		// Return success response with file path
+		c.JSON(http.StatusOK, gin.H{
+			"message":  "Excel file downloaded successfully",
+			"filePath": filePath,
+			"league":   league.LeagueName,
+		})
+	})
+
 }
 
 // GetDataFromApi makes a simple HTTP GET request to an external API

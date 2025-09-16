@@ -143,6 +143,19 @@ type MatchInfo struct {
 	Address   string `json:"address"`
 }
 
+// Round represents a single round of matches
+type Round struct {
+	Number   int         `json:"number"`
+	DateTime string      `json:"dateTime"` // e.g., "2025/10/25 at 11:00"
+	Matches  []MatchInfo `json:"matches"`
+}
+
+// TournamentData represents the complete tournament structure
+type TournamentData struct {
+	LeagueName string  `json:"leagueName"`
+	Rounds     []Round `json:"rounds"`
+}
+
 // NewPDFData creates a new PDFData instance with default values
 func NewPDFData() *PDFData {
 	return &PDFData{
