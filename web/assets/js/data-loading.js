@@ -1,4 +1,3 @@
-// Data Loading Functions
 async function loadExternalData() {
     const btn = document.getElementById('loadDataBtn');
     const status = document.getElementById('loadStatus');

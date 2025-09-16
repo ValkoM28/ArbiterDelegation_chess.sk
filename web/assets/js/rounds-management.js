@@ -28,12 +28,7 @@ async function loadRoundsData(leagueId) {
         if (currentLeague.directorEmail) {
             directorInfo += ` (${currentLeague.directorEmail})`;
         }
-        contactPerson = ''; // This will be set by user
-
-        console.log('Rounds loaded:', currentRounds);
-        console.log('League:', currentLeague);
-        
-        // Display the rounds editor
+        contactPerson = '';
         displayRoundsEditor();
         
         return data;
@@ -52,10 +47,9 @@ function displayRoundsEditor() {
         return;
     }
 
-    // Show the rounds editor section
     roundsContainer.classList.remove('hidden');
 
-    // Build the HTML for rounds editor
+    // JavaScript injected html, probably enough for the usecase
     let html = `
         <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-2xl font-semibold text-gray-700 mb-6">Rounds Data Editor</h2>
@@ -90,7 +84,6 @@ function displayRoundsEditor() {
             <div class="space-y-6">
     `;
 
-    // Add each round
     currentRounds.forEach((round, roundIndex) => {
         html += `
             <div class="border border-gray-200 rounded-lg p-4">
@@ -171,33 +164,12 @@ function displayRoundsEditor() {
                 </div>
             `;
         });
-
+        // end the editor
         html += `
                 </div>
             </div>
         `;
     });
-
-    html += `
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="mt-8 flex justify-end space-x-4">
-                <button 
-                    onclick="saveRoundsData()"
-                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded transition duration-200"
-                >
-                    Save Changes
-                </button>
-                <button 
-                    onclick="hideRoundsEditor()"
-                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-200"
-                >
-                    Close Editor
-                </button>
-            </div>
-        </div>
-    `;
 
     roundsContainer.innerHTML = html;
     
