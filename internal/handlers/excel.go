@@ -16,8 +16,7 @@ import (
 func DownloadChessResultsExcel(tournamentID string) (string, error) {
 	// Construct the URL for the Excel download
 	url := fmt.Sprintf("https://chess-results.com/tnr%s.aspx?lan=1&zeilen=0&art=2&prt=4&excel=2010", tournamentID)
-
-	// Create HTTP client with timeout
+ 	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 60 * time.Second, // Longer timeout for file download
 	}
@@ -100,42 +99,3 @@ func DownloadExcelForLeague(league *data.League) (string, error) {
 	return filePath, nil
 }
 
-// TestDownloadExcelForLeague is a test function to demonstrate the functionality
-func TestDownloadExcelForLeague(league *data.League) error {
-	fmt.Printf("Testing Excel download for league: %s\n", league.LeagueName)
-	fmt.Printf("ChessResultsLink: %s\n", league.ChessResultsLink)
-
-	// Extract tournament ID
-	tournamentID, err := ExtractTournamentIDFromLeague(league)
-	if err != nil {
-		return fmt.Errorf("failed to extract tournament ID: %v", err)
-	}
-	fmt.Printf("Extracted tournament ID: %s\n", tournamentID)
-
-	// Download Excel file
-	filePath, err := DownloadExcelForLeague(league)
-	if err != nil {
-		return fmt.Errorf("failed to download Excel file: %v", err)
-	}
-
-	fmt.Printf("Excel file downloaded successfully to: %s\n", filePath)
-	fmt.Printf("File size: %d bytes\n", getFileSize(filePath))
-
-	return nil
-}
-
-// getFileSize returns the size of a file in bytes
-func getFileSize(filePath string) int64 {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0
-	}
-	defer file.Close()
-
-	stat, err := file.Stat()
-	if err != nil {
-		return 0
-	}
-
-	return stat.Size()
-}
