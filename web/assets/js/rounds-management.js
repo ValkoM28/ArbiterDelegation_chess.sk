@@ -51,7 +51,7 @@ function displayRoundsEditor() {
 
     // JavaScript injected html, probably enough for the usecase
     let html = `
-        <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="mx-auto bg-white rounded-lg shadow-md p-6">
             <h2 class="text-2xl font-semibold text-gray-700 mb-6">Rounds Data Editor</h2>
             
             <!-- Global Fields -->
@@ -164,14 +164,33 @@ function displayRoundsEditor() {
                 </div>
             `;
         });
-        // end the editor
         html += `
+
                 </div>
             </div>
         `;
     });
 
+    html += `
+        <div class="flex space-x-4 justify-end">
+            <button 
+                id="prepareDelegationBtn"
+                onclick="prepareDelegationData()"
+                class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 text-lg rounded-lg transition duration-200"
+                disabled
+            >
+                Vytvoriť delegačné listy
+            </button>
+        </div>
+
+    `; 
     roundsContainer.innerHTML = html;
+    
+    // Enable the prepare delegation button
+    const prepareDelegationBtn = document.getElementById('prepareDelegationBtn');
+    if (prepareDelegationBtn) {
+        prepareDelegationBtn.disabled = false;
+    }
     
     // Populate arbiter dropdowns for all matches
     populateMatchArbiterDropdowns();

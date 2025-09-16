@@ -106,7 +106,6 @@ async function populateLeagueDropdown() {
 async function onLeagueSelected() {
     const leagueSelect = document.getElementById('leagueSelect');
     const presetFields = document.getElementById('presetFields');
-    const prepareDelegationBtn = document.getElementById('prepareDelegationBtn');
     
     if (leagueSelect.value) {
         // Show preset fields
@@ -115,13 +114,12 @@ async function onLeagueSelected() {
         // Automatically load rounds data
         try {
             await loadRoundsData(parseInt(leagueSelect.value));
-            prepareDelegationBtn.disabled = false;
+            // The button will be enabled in the rounds editor after it's created
         } catch (error) {
             console.error('Error loading rounds data:', error);
         }
     } else {
         // Hide preset fields
         presetFields.classList.add('hidden');
-        prepareDelegationBtn.disabled = true;
     }
 }
