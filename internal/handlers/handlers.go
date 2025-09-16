@@ -313,50 +313,47 @@ func RegisterRoutes(r *gin.Engine) {
 		})
 	})
 
-	// Save edited rounds data
-	r.POST("/save-rounds", func(c *gin.Context) {
+	r.POST("/delegate-arbiters", func(c *gin.Context) {
 		if sessionData == nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
 			return
 		}
 
-		// Parse request body to get rounds data
-		var requestBody struct {
-			Rounds []data.Round `json:"rounds"`
-		}
+		var requestBody []data.PDFData
 		if err := c.BindJSON(&requestBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
 
-		// Store updated rounds in session data
-		sessionData.Set("current_rounds", requestBody.Rounds)
-
-		// Return success response
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Rounds data saved successfully",
-			"count":   len(requestBody.Rounds),
-		})
-	})
-
-	// Get current rounds data
-	r.GET("/current-rounds", func(c *gin.Context) {
-		if sessionData == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Session data not initialized"})
-			return
-		}
-
-		rounds, exists := sessionData.Get("current_rounds")
-		if !exists {
-			c.JSON(http.StatusNotFound, gin.H{"error": "No rounds data loaded"})
-			return
-		}
+		// Prepare data for function call
+		printPDFDataArray(requestBody)
 
 		c.JSON(http.StatusOK, gin.H{
-			"rounds": rounds,
+			"message": "PDFData array prepared for function call",
+			"count":   len(requestBody),
+			"ready":   true,
 		})
 	})
+}
 
+// printPDFDataArray is a temporary function to print PDFData array for debugging
+func printPDFDataArray(pdfDataArray []data.PDFData) {
+	fmt.Printf("\n=== PDFData Array Debug Output ===\n")
+	fmt.Printf("Total items: %d\n", len(pdfDataArray))
+	fmt.Printf("=====================================\n")
+
+	for i, pdfData := range pdfDataArray {
+		fmt.Printf("\n--- Item %d ---\n", i+1)
+		fmt.Printf("League: %s (%s)\n", pdfData.League.Name, pdfData.League.Year)
+		fmt.Printf("Director: %s\n", pdfData.Director.Contact)
+		fmt.Printf("Arbiter: %s %s (ID: %s)\n", pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
+		fmt.Printf("Match: %s vs %s\n", pdfData.Match.HomeTeam, pdfData.Match.GuestTeam)
+		fmt.Printf("DateTime: %s\n", pdfData.Match.DateTime)
+		fmt.Printf("Address: %s\n", pdfData.Match.Address)
+		fmt.Printf("Contact Person: %s\n", pdfData.ContactPerson)
+	}
+
+	fmt.Printf("\n=== End Debug Output ===\n")
 }
 
 // GetDataFromApi makes a simple HTTP GET request to an external API
