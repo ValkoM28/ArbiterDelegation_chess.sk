@@ -25,9 +25,7 @@ async function loadExternalData() {
                 <span class="text-green-600">✓ ${result.message}</span><br>
             `;
             
-            // Show data preview and populate dropdowns
             if (result.arbiters_loaded && result.leagues_loaded) {
-                showDataPreview();
                 populateLeagueDropdown();
             }
         } else {
@@ -37,38 +35,7 @@ async function loadExternalData() {
         status.innerHTML = `<span class="text-red-600">✗ Network error: ${error.message}</span>`;
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Load External Data';
-    }
-}
-
-async function showDataPreview() {
-    const preview = document.getElementById('dataPreview');
-    const arbitersPreview = document.getElementById('arbitersPreview');
-    const leaguesPreview = document.getElementById('leaguesPreview');
-    
-    try {
-        const arbitersResponse = await fetch('/arbiters');
-        const arbitersData = await arbitersResponse.json();
-        
-        if (arbitersData.arbiters && arbitersData.arbiters.length > 0) {
-            arbitersPreview.innerHTML = `<div class="text-green-600 font-medium">Loaded ${arbitersData.arbiters.length} active arbiters</div>`;
-        } else {
-            arbitersPreview.innerHTML = '<div class="text-gray-400">No arbiters data</div>';
-        }
-
-        const leaguesResponse = await fetch('/leagues');
-        const leaguesData = await leaguesResponse.json();
-        
-        if (leaguesData.leagues && leaguesData.leagues.length > 0) {
-            leaguesPreview.innerHTML = `<div class="text-green-600 font-medium">Loaded ${leaguesData.leagues.length} leagues</div>`;
-        } else {
-            leaguesPreview.innerHTML = '<div class="text-gray-400">No leagues data</div>';
-        }
-
-        // Show the preview
-        preview.classList.remove('hidden');
-    } catch (error) {
-        console.error('Error loading data preview:', error);
+        btn.textContent = 'Načítaj dáta z chess.sk';
     }
 }
 
@@ -81,7 +48,7 @@ async function populateLeagueDropdown() {
         
         if (data.leagues && data.leagues.length > 0) {
             // Clear existing options
-            leagueSelect.innerHTML = '<option value="">Select a league...</option>';
+            leagueSelect.innerHTML = '<option value="">Vyberte ligu...</option>';
             
             // Add league options
             data.leagues.forEach(league => {

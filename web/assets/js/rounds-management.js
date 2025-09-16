@@ -52,14 +52,14 @@ function displayRoundsEditor() {
     // JavaScript injected html, probably enough for the usecase
     let html = `
         <div class="mx-auto bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Rounds Data Editor</h2>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Uprav Kolá</h2>
             
             <!-- Global Fields -->
             <div class="mb-8 p-4 bg-gray-50 rounded-lg">
-                <h3 class="text-lg font-medium text-gray-700 mb-4">Global Information</h3>
+                <h3 class="text-lg font-medium text-gray-700 mb-4">Základné Info</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Director Info</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Riaditeľ súťaže (kontakt)</label>
                         <input 
                             type="text" 
                             id="globalDirectorInfo" 
@@ -68,7 +68,7 @@ function displayRoundsEditor() {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Poverený člen KR (kontakt)</label>
                         <input 
                             type="text" 
                             id="globalContactPerson" 
@@ -88,16 +88,7 @@ function displayRoundsEditor() {
         html += `
             <div class="border border-gray-200 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-lg font-medium text-gray-700">Round ${round.number}</h4>
-                    <div class="flex items-center space-x-4">
-                        <label class="text-sm font-medium text-gray-700">Date & Time:</label>
-                        <input 
-                            type="text" 
-                            id="round_${roundIndex}_datetime" 
-                            value="${round.dateTime}"
-                            class="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                    <h4 class="text-lg font-medium text-gray-700">Kolo č. ${round.number}</h4>
                 </div>
                 
                 <div class="space-y-3">
@@ -109,7 +100,7 @@ function displayRoundsEditor() {
                 <div class="p-3 bg-gray-50 rounded border">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Home Team</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Domáci</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_home" 
@@ -118,7 +109,7 @@ function displayRoundsEditor() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Guest Team</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Hostia</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_guest" 
@@ -127,7 +118,7 @@ function displayRoundsEditor() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Date & Time</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Dátum a Čas (RRRR/MM/DD HH:MM)</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_datetime" 
@@ -136,7 +127,7 @@ function displayRoundsEditor() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Adresa hracej miestnosti</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_address" 
@@ -149,7 +140,7 @@ function displayRoundsEditor() {
                     
                     <!-- Match Arbiter Selection -->
                     <div class="mt-3 p-2 bg-blue-50 rounded">
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Arbiter for this Match:</label>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Delegovaný rozhodca:</label>
                         <select 
                             id="round_${roundIndex}_match_${matchIndex}_arbiter" 
                             class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
