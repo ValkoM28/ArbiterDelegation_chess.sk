@@ -1,4 +1,3 @@
-// Data Loading Functions
 async function loadExternalData() {
     const btn = document.getElementById('loadDataBtn');
     const status = document.getElementById('loadStatus');
@@ -24,13 +23,9 @@ async function loadExternalData() {
         if (response.ok) {
             status.innerHTML = `
                 <span class="text-green-600">✓ ${result.message}</span><br>
-                <span class="text-sm">Arbiters: ${result.arbiters_loaded ? 'Loaded' : 'Not loaded'}</span><br>
-                <span class="text-sm">Leagues: ${result.leagues_loaded ? 'Loaded' : 'Not loaded'}</span>
             `;
             
-            // Show data preview and populate dropdowns
             if (result.arbiters_loaded && result.leagues_loaded) {
-                showDataPreview();
                 populateLeagueDropdown();
             }
         } else {
@@ -40,51 +35,58 @@ async function loadExternalData() {
         status.innerHTML = `<span class="text-red-600">✗ Network error: ${error.message}</span>`;
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Load External Data';
+        btn.textContent = 'Načítaj dáta z chess.sk';
     }
 }
 
-async function showDataPreview() {
-    const preview = document.getElementById('dataPreview');
-    const arbitersPreview = document.getElementById('arbitersPreview');
-    const leaguesPreview = document.getElementById('leaguesPreview');
+async function populateLeagueDropdown() {
+    const leagueSelect = document.getElementById('leagueSelect');
     
     try {
-        // Fetch arbiters data
-        const arbitersResponse = await fetch('/arbiters');
-        const arbitersData = await arbitersResponse.json();
+        const response = await fetch('/leagues');
+        const data = await response.json();
         
-        if (arbitersData.arbiters && arbitersData.arbiters.length > 0) {
-            const firstFew = arbitersData.arbiters.slice(0, 3);
-            arbitersPreview.innerHTML = firstFew.map(arbiter => 
-                `<div>• ${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})</div>`
-            ).join('');
-            if (arbitersData.arbiters.length > 3) {
-                arbitersPreview.innerHTML += `<div class="text-gray-400">... and ${arbitersData.arbiters.length - 3} more</div>`;
-            }
+        if (data.leagues && data.leagues.length > 0) {
+            // Clear existing options
+            leagueSelect.innerHTML = '<option value="">Vyberte ligu...</option>';
+            
+            // Add league options
+            data.leagues.forEach(league => {
+                const option = document.createElement('option');
+                option.value = league.leagueId;
+                option.textContent = `${league.leagueName} (${league.saisonName})`;
+                leagueSelect.appendChild(option);
+            });
+            
+            // Enable the dropdown
+            leagueSelect.disabled = false;
         } else {
-            arbitersPreview.innerHTML = '<div class="text-gray-400">No arbiters data</div>';
+            leagueSelect.innerHTML = '<option value="">No leagues available</option>';
         }
-
-        // Fetch leagues data
-        const leaguesResponse = await fetch('/leagues');
-        const leaguesData = await leaguesResponse.json();
-        
-        if (leaguesData.leagues && leaguesData.leagues.length > 0) {
-            const firstFew = leaguesData.leagues.slice(0, 3);
-            leaguesPreview.innerHTML = firstFew.map(league => 
-                `<div>• ${league.leagueName} (${league.saisonName})</div>`
-            ).join('');
-            if (leaguesData.leagues.length > 3) {
-                leaguesPreview.innerHTML += `<div class="text-gray-400">... and ${leaguesData.leagues.length - 3} more</div>`;
-            }
-        } else {
-            leaguesPreview.innerHTML = '<div class="text-gray-400">No leagues data</div>';
-        }
-
-        // Show the preview
-        preview.classList.remove('hidden');
     } catch (error) {
-        console.error('Error loading data preview:', error);
+        console.error('Error loading leagues:', error);
+        leagueSelect.innerHTML = '<option value="">Error loading leagues</option>';
+    }
+}
+
+
+async function onLeagueSelected() {
+    const leagueSelect = document.getElementById('leagueSelect');
+    const presetFields = document.getElementById('presetFields');
+    
+    if (leagueSelect.value) {
+        // Show preset fields
+        presetFields.classList.remove('hidden');
+        
+        // Automatically load rounds data
+        try {
+            await loadRoundsData(parseInt(leagueSelect.value));
+            // The button will be enabled in the rounds editor after it's created
+        } catch (error) {
+            console.error('Error loading rounds data:', error);
+        }
+    } else {
+        // Hide preset fields
+        presetFields.classList.add('hidden');
     }
 }

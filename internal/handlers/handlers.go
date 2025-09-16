@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
@@ -14,6 +15,69 @@ import (
 
 // Global session data storage
 var sessionData *data.SessionData
+
+// buildURLWithParams constructs a URL with query parameters
+func buildURLWithParams(baseURL string, params map[string]string) string {
+	if len(params) == 0 {
+		return baseURL
+	}
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL
+	}
+
+	q := u.Query()
+	for key, value := range params {
+		q.Set(key, value)
+	}
+	u.RawQuery = q.Encode()
+
+	return u.String()
+}
+
+// filterActiveArbiters filters arbiters to only include active ones
+// TEMPORARY: This function should be removed when chess.sk API properly supports status=active parameter
+func filterActiveArbiters(rawData interface{}) (map[string]interface{}, error) {
+	// Extract the actual data array from our wrapped structure
+	dataMap, ok := rawData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw data is not a map")
+	}
+
+	dataArray, ok := dataMap["data"]
+	if !ok {
+		return nil, fmt.Errorf("no 'data' field in raw data")
+	}
+
+	// Convert to slice of interfaces
+	arbitersSlice, ok := dataArray.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("data is not an array")
+	}
+
+	// Filter for active arbiters
+	var activeArbiters []interface{}
+	for _, arbiterInterface := range arbitersSlice {
+		arbiterMap, ok := arbiterInterface.(map[string]interface{})
+		if !ok {
+			continue // Skip invalid entries
+		}
+
+		// Check if IsActive is true
+		if isActive, exists := arbiterMap["IsActive"]; exists {
+			if isActiveBool, ok := isActive.(bool); ok && isActiveBool {
+				activeArbiters = append(activeArbiters, arbiterInterface)
+			}
+		}
+	}
+
+	// Create new data structure with filtered arbiters
+	resultMap := make(map[string]interface{})
+	resultMap["data"] = activeArbiters
+
+	return resultMap, nil
+}
 
 // InitializeSessionData initializes the global session data storage
 func InitializeSessionData() {
@@ -71,11 +135,27 @@ func RegisterRoutes(r *gin.Engine) {
 			return
 		}
 
-		// Load arbiters data from your real API
-		err := sessionData.LoadData("arbiters", "https://chess.sk/api/matrika.php/v1/arbiters")
+		// Load arbiters data from your real API with hardcoded active status parameter
+		// TODO: Remove client-side filtering when chess.sk API properly supports status=active parameter
+		arbitersURL := buildURLWithParams("https://chess.sk/api/matrika.php/v1/arbiters", map[string]string{
+			"status": "active", // Currently ignored by API, but kept for when it gets fixed
+		})
+
+		err := sessionData.LoadData("arbiters", arbitersURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load arbiters: " + err.Error()})
 			return
+		}
+
+		// TEMPORARY: Client-side filtering for active arbiters until chess.sk API supports status=active
+		arbitersData, exists := sessionData.Get("arbiters")
+		if exists {
+			filteredArbiters, err := filterActiveArbiters(arbitersData)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to filter arbiters: " + err.Error()})
+				return
+			}
+			sessionData.Set("arbiters", filteredArbiters)
 		}
 
 		// Load leagues data from your real API with season parameter

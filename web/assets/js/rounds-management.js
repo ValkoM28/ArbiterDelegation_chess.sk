@@ -28,12 +28,7 @@ async function loadRoundsData(leagueId) {
         if (currentLeague.directorEmail) {
             directorInfo += ` (${currentLeague.directorEmail})`;
         }
-        contactPerson = ''; // This will be set by user
-
-        console.log('Rounds loaded:', currentRounds);
-        console.log('League:', currentLeague);
-        
-        // Display the rounds editor
+        contactPerson = '';
         displayRoundsEditor();
         
         return data;
@@ -52,20 +47,19 @@ function displayRoundsEditor() {
         return;
     }
 
-    // Show the rounds editor section
     roundsContainer.classList.remove('hidden');
 
-    // Build the HTML for rounds editor
+    // JavaScript injected html, probably enough for the usecase
     let html = `
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Rounds Data Editor</h2>
+        <div class="mx-auto bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Uprav Kolá</h2>
             
             <!-- Global Fields -->
             <div class="mb-8 p-4 bg-gray-50 rounded-lg">
-                <h3 class="text-lg font-medium text-gray-700 mb-4">Global Information</h3>
+                <h3 class="text-lg font-medium text-gray-700 mb-4">Základné Info</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Director Info</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Riaditeľ súťaže (kontakt)</label>
                         <input 
                             type="text" 
                             id="globalDirectorInfo" 
@@ -74,7 +68,7 @@ function displayRoundsEditor() {
                         />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Poverený člen KR (kontakt)</label>
                         <input 
                             type="text" 
                             id="globalContactPerson" 
@@ -90,21 +84,11 @@ function displayRoundsEditor() {
             <div class="space-y-6">
     `;
 
-    // Add each round
     currentRounds.forEach((round, roundIndex) => {
         html += `
             <div class="border border-gray-200 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-lg font-medium text-gray-700">Round ${round.number}</h4>
-                    <div class="flex items-center space-x-4">
-                        <label class="text-sm font-medium text-gray-700">Date & Time:</label>
-                        <input 
-                            type="text" 
-                            id="round_${roundIndex}_datetime" 
-                            value="${round.dateTime}"
-                            class="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                    <h4 class="text-lg font-medium text-gray-700">Kolo č. ${round.number}</h4>
                 </div>
                 
                 <div class="space-y-3">
@@ -116,7 +100,7 @@ function displayRoundsEditor() {
                 <div class="p-3 bg-gray-50 rounded border">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Home Team</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Domáci</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_home" 
@@ -125,7 +109,7 @@ function displayRoundsEditor() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Guest Team</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Hostia</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_guest" 
@@ -134,7 +118,7 @@ function displayRoundsEditor() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Date & Time</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Dátum a Čas (RRRR/MM/DD HH:MM)</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_datetime" 
@@ -143,7 +127,7 @@ function displayRoundsEditor() {
                             />
                         </div>
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Adresa hracej miestnosti</label>
                             <input 
                                 type="text" 
                                 id="round_${roundIndex}_match_${matchIndex}_address" 
@@ -156,14 +140,24 @@ function displayRoundsEditor() {
                     
                     <!-- Match Arbiter Selection -->
                     <div class="mt-3 p-2 bg-blue-50 rounded">
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Arbiter for this Match:</label>
-                        <select 
-                            id="round_${roundIndex}_match_${matchIndex}_arbiter" 
-                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            onchange="onMatchArbiterSelected(${roundIndex}, ${matchIndex})"
-                        >
-                            <option value="">Select an arbiter for this match...</option>
-                        </select>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Delegovaný rozhodca:</label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="round_${roundIndex}_match_${matchIndex}_arbiter_search" 
+                                placeholder="Hľadaj podľa priezviska..."
+                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                oninput="filterArbiters(${roundIndex}, ${matchIndex})"
+                                onfocus="showArbiterDropdown(${roundIndex}, ${matchIndex})"
+                                onblur="hideArbiterDropdown(${roundIndex}, ${matchIndex})"
+                            />
+                            <div 
+                                id="round_${roundIndex}_match_${matchIndex}_arbiter_dropdown" 
+                                class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"
+                            >
+                                <!-- Arbiter options will be populated here -->
+                            </div>
+                        </div>
                         <div id="round_${roundIndex}_match_${matchIndex}_arbiter_details" class="mt-1 text-xs text-gray-600 hidden">
                             <!-- Arbiter details will be shown here -->
                         </div>
@@ -171,35 +165,33 @@ function displayRoundsEditor() {
                 </div>
             `;
         });
-
         html += `
+
                 </div>
             </div>
         `;
     });
 
     html += `
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="mt-8 flex justify-end space-x-4">
-                <button 
-                    onclick="saveRoundsData()"
-                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded transition duration-200"
-                >
-                    Save Changes
-                </button>
-                <button 
-                    onclick="hideRoundsEditor()"
-                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded transition duration-200"
-                >
-                    Close Editor
-                </button>
-            </div>
+        <div class="flex space-x-4 justify-end">
+            <button 
+                id="prepareDelegationBtn"
+                onclick="prepareDelegationData()"
+                class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 text-lg rounded-lg transition duration-200"
+                disabled
+            >
+                Vytvoriť delegačné listy
+            </button>
         </div>
-    `;
 
+    `; 
     roundsContainer.innerHTML = html;
+    
+    // Enable the prepare delegation button
+    const prepareDelegationBtn = document.getElementById('prepareDelegationBtn');
+    if (prepareDelegationBtn) {
+        prepareDelegationBtn.disabled = false;
+    }
     
     // Populate arbiter dropdowns for all matches
     populateMatchArbiterDropdowns();
@@ -279,47 +271,7 @@ function showStatus(message, type = 'info') {
     }
 }
 
-// Get current rounds data (for use by other scripts)
-function getCurrentRounds() {
-    return currentRounds;
-}
 
-// Get director info
-function getDirectorInfo() {
-    return directorInfo;
-}
-
-// Get contact person
-function getContactPerson() {
-    return contactPerson;
-}
-
-// Load rounds for the currently selected league
-async function loadRoundsForCurrentLeague() {
-    const leagueSelect = document.getElementById('leagueSelect');
-    const loadRoundsBtn = document.getElementById('loadRoundsBtn');
-    const roundsStatus = document.getElementById('roundsStatus');
-    
-    if (!leagueSelect.value) {
-        roundsStatus.innerHTML = '<span class="text-red-600">✗ Please select a league first</span>';
-        return;
-    }
-    
-    // Update button state
-    loadRoundsBtn.disabled = true;
-    loadRoundsBtn.textContent = 'Loading...';
-    roundsStatus.textContent = 'Loading rounds data...';
-    
-    try {
-        await loadRoundsData(parseInt(leagueSelect.value));
-        roundsStatus.innerHTML = '<span class="text-green-600">✓ Rounds data loaded successfully</span>';
-    } catch (error) {
-        roundsStatus.innerHTML = `<span class="text-red-600">✗ Error: ${error.message}</span>`;
-    } finally {
-        loadRoundsBtn.disabled = false;
-        loadRoundsBtn.textContent = 'Load & Edit Rounds';
-    }
-}
 
 // Populate arbiter dropdowns for all matches
 async function populateMatchArbiterDropdowns() {
@@ -329,21 +281,16 @@ async function populateMatchArbiterDropdowns() {
         const data = await response.json();
         
         if (data.arbiters && data.arbiters.length > 0) {
+            // Store arbiters globally for filtering
+            window.allArbiters = data.arbiters;
+            
             // Populate all match arbiter dropdowns
             currentRounds.forEach((round, roundIndex) => {
                 round.matches.forEach((match, matchIndex) => {
-                    const selectElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
-                    if (selectElement) {
-                        // Clear existing options except the first one
-                        selectElement.innerHTML = '<option value="">Select an arbiter for this match...</option>';
-                        
-                        // Add arbiter options
-                        data.arbiters.forEach(arbiter => {
-                            const option = document.createElement('option');
-                            option.value = arbiter.ArbiterId;
-                            option.textContent = `${arbiter.FirstName} ${arbiter.LastName} (${arbiter.ArbiterLevel})`;
-                            selectElement.appendChild(option);
-                        });
+                    const dropdownElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+                    if (dropdownElement) {
+                        // Populate dropdown with all arbiters initially
+                        populateArbiterDropdown(roundIndex, matchIndex, data.arbiters);
                     }
                 });
             });
@@ -353,7 +300,116 @@ async function populateMatchArbiterDropdowns() {
     }
 }
 
-// Handle arbiter selection for a specific match
+// Populate arbiter dropdown with given arbiters list
+function populateArbiterDropdown(roundIndex, matchIndex, arbiters) {
+    const dropdownElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    if (!dropdownElement) return;
+    
+    // Clear existing options
+    dropdownElement.innerHTML = '';
+    
+    // Sort arbiters by last name first, then first name
+    const sortedArbiters = arbiters.sort((a, b) => {
+        const aName = `${a.LastName} ${a.FirstName}`.toLowerCase();
+        const bName = `${b.LastName} ${b.FirstName}`.toLowerCase();
+        return aName.localeCompare(bName);
+    });
+    
+    // Add arbiter options
+    sortedArbiters.forEach(arbiter => {
+        const option = document.createElement('div');
+        option.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
+        option.textContent = `${arbiter.LastName} ${arbiter.FirstName} (${arbiter.ArbiterLevel})${arbiter.KlubName ? ` - ${arbiter.KlubName}` : ''}`;
+        option.onclick = () => selectArbiter(roundIndex, matchIndex, arbiter);
+        dropdownElement.appendChild(option);
+    });
+}
+
+// Show arbiter dropdown
+function showArbiterDropdown(roundIndex, matchIndex) {
+    const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    if (dropdown) {
+        dropdown.classList.remove('hidden');
+    }
+}
+
+// Hide arbiter dropdown
+function hideArbiterDropdown(roundIndex, matchIndex) {
+    // Add a small delay to allow clicking on options
+    setTimeout(() => {
+        const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+        if (dropdown) {
+            dropdown.classList.add('hidden');
+        }
+    }, 200);
+}
+
+// Normalize text by removing diacritics and converting to lowercase
+function normalizeText(text) {
+    return text
+        .toLowerCase()
+        .normalize('NFD') // Decompose characters with diacritics
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritic marks
+        .replace(/[^\w\s]/g, '') // Remove special characters except letters, numbers, and spaces
+        .trim();
+}
+
+// Filter arbiters based on search input
+function filterArbiters(roundIndex, matchIndex) {
+    const searchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+    const searchTerm = normalizeText(searchInput.value);
+    
+    if (!window.allArbiters) return;
+    
+    // Filter arbiters by last name first, then first name
+    const filteredArbiters = window.allArbiters.filter(arbiter => {
+        const fullName = normalizeText(`${arbiter.LastName} ${arbiter.FirstName}`);
+        const clubName = arbiter.KlubName ? normalizeText(arbiter.KlubName) : '';
+        return fullName.includes(searchTerm) || clubName.includes(searchTerm);
+    });
+    
+    populateArbiterDropdown(roundIndex, matchIndex, filteredArbiters);
+    
+    // Show dropdown if there are results
+    const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    if (dropdown) {
+        dropdown.classList.remove('hidden');
+    }
+}
+
+// Select an arbiter
+function selectArbiter(roundIndex, matchIndex, arbiter) {
+    const searchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+    const dropdown = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_dropdown`);
+    
+    // Update search input with selected arbiter
+    searchInput.value = `${arbiter.LastName} ${arbiter.FirstName} (${arbiter.ArbiterLevel})${arbiter.KlubName ? ` - ${arbiter.KlubName}` : ''}`;
+    
+    // Hide dropdown
+    dropdown.classList.add('hidden');
+    
+    // Store selected arbiter ID for later use
+    searchInput.setAttribute('data-arbiter-id', arbiter.ArbiterId);
+    
+    // Show arbiter details
+    showArbiterDetails(roundIndex, matchIndex, arbiter);
+}
+
+// Show arbiter details
+async function showArbiterDetails(roundIndex, matchIndex, arbiter) {
+    const detailsElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
+    if (detailsElement) {
+        const clubInfo = arbiter.KlubName ? ` - ${arbiter.KlubName}` : '';
+        detailsElement.innerHTML = `
+            <div class="text-xs text-gray-600">
+                <strong>${arbiter.LastName} ${arbiter.FirstName}</strong> (${arbiter.ArbiterLevel})${clubInfo}
+            </div>
+        `;
+        detailsElement.classList.remove('hidden');
+    }
+}
+
+// Handle arbiter selection for a specific match (legacy function - keeping for compatibility)
 async function onMatchArbiterSelected(roundIndex, matchIndex) {
     const selectElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
     const detailsElement = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
@@ -364,8 +420,9 @@ async function onMatchArbiterSelected(roundIndex, matchIndex) {
             const data = await response.json();
             
             if (data.arbiter) {
+                const clubInfo = data.arbiter.KlubName ? ` - ${data.arbiter.KlubName}` : '';
                 detailsElement.innerHTML = `
-                    <strong>Selected:</strong> ${data.arbiter.FirstName} ${data.arbiter.LastName} (ID: ${data.arbiter.PlayerId})
+                    <strong>Selected:</strong> ${data.arbiter.FirstName} ${data.arbiter.LastName} (ID: ${data.arbiter.PlayerId})${clubInfo}
                 `;
                 detailsElement.classList.remove('hidden');
             }
@@ -383,12 +440,7 @@ async function onMatchArbiterSelected(roundIndex, matchIndex) {
 function preparePDFDataArray() {
     const leagueSelect = document.getElementById('leagueSelect');
     
-    // Get league info from the form
-    const directorInfo = document.getElementById('directorField').value;
-    const directorContact = document.getElementById('directorContactField').value;
-    
-    // Get global info from rounds editor if available
-    const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value || directorInfo;
+    const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value;
     const globalContactPerson = document.getElementById('globalContactPerson')?.value || '';
     
     // Get league name from the selected option
@@ -407,35 +459,41 @@ function preparePDFDataArray() {
             const dateTime = document.getElementById(`round_${roundIndex}_match_${matchIndex}_datetime`)?.value || match.dateTime;
             const address = document.getElementById(`round_${roundIndex}_match_${matchIndex}_address`)?.value || match.address;
             
-            // Get arbiter info from the match's arbiter dropdown
-            const arbiterSelect = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
-            const selectedArbiterId = arbiterSelect ? arbiterSelect.value : '';
+            // Get arbiter info from the searchable input
+            const arbiterSearchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+            const selectedArbiterId = arbiterSearchInput ? arbiterSearchInput.getAttribute('data-arbiter-id') : '';
             
             // Get arbiter details from the details element
             const arbiterDetails = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
             let arbiterName = '';
             let arbiterId = '';
+            let arbiterClubName = '';
             
             if (arbiterDetails && arbiterDetails.textContent) {
-                // Extract name and ID from the details text
+                // Extract name from the details text (format: "LastName FirstName (Level) - Club")
                 const detailsText = arbiterDetails.textContent;
-                const nameMatch = detailsText.match(/Selected: (.+?) \(ID: (.+?)\)/);
+                const nameMatch = detailsText.match(/<strong>(.+?)<\/strong>/);
                 if (nameMatch) {
                     arbiterName = nameMatch[1];
-                    arbiterId = nameMatch[2];
+                    arbiterId = selectedArbiterId;
+                    
+                    // Extract club name if present
+                    const clubMatch = detailsText.match(/- (.+?)<\/div>/);
+                    if (clubMatch) {
+                        arbiterClubName = clubMatch[1];
+                    }
                 }
             }
             
-            // If no arbiter details found, try to get from dropdown selection
-            if (!arbiterName && selectedArbiterId) {
-                const selectedArbiterOption = arbiterSelect.options[arbiterSelect.selectedIndex];
-                if (selectedArbiterOption) {
-                    const optionText = selectedArbiterOption.textContent;
-                    const arbiterMatch = optionText.match(/^(.+?) \((.+?)\)$/);
-                    if (arbiterMatch) {
-                        arbiterName = arbiterMatch[1];
-                        arbiterId = selectedArbiterId;
-                    }
+            // If no arbiter details found, try to get from search input
+            if (!arbiterName && arbiterSearchInput && arbiterSearchInput.value) {
+                const inputValue = arbiterSearchInput.value;
+                // Parse the format: "LastName FirstName (Level) - Club"
+                const arbiterMatch = inputValue.match(/^(.+?) \((.+?)\)(?: - (.+))?$/);
+                if (arbiterMatch) {
+                    arbiterName = arbiterMatch[1];
+                    arbiterId = selectedArbiterId;
+                    arbiterClubName = arbiterMatch[3] || '';
                 }
             }
             
@@ -445,12 +503,13 @@ function preparePDFDataArray() {
                     year: leagueYear
                 },
                 director: {
-                    contact: globalDirectorInfo || `${directorInfo} (${directorContact})`
+                    contact: globalDirectorInfo
                 },
                 arbiter: {
                     firstName: arbiterName.split(' ')[0] || '',
                     lastName: arbiterName.split(' ').slice(1).join(' ') || '',
-                    playerId: arbiterId
+                    playerId: arbiterId,
+                    clubName: '' // just because of the updated ArbiterInfo in backend it wont run without this line :D 
                 },
                 match: {
                     homeTeam: homeTeam,
