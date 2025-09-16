@@ -279,47 +279,7 @@ function showStatus(message, type = 'info') {
     }
 }
 
-// Get current rounds data (for use by other scripts)
-function getCurrentRounds() {
-    return currentRounds;
-}
 
-// Get director info
-function getDirectorInfo() {
-    return directorInfo;
-}
-
-// Get contact person
-function getContactPerson() {
-    return contactPerson;
-}
-
-// Load rounds for the currently selected league
-async function loadRoundsForCurrentLeague() {
-    const leagueSelect = document.getElementById('leagueSelect');
-    const loadRoundsBtn = document.getElementById('loadRoundsBtn');
-    const roundsStatus = document.getElementById('roundsStatus');
-    
-    if (!leagueSelect.value) {
-        roundsStatus.innerHTML = '<span class="text-red-600">✗ Please select a league first</span>';
-        return;
-    }
-    
-    // Update button state
-    loadRoundsBtn.disabled = true;
-    loadRoundsBtn.textContent = 'Loading...';
-    roundsStatus.textContent = 'Loading rounds data...';
-    
-    try {
-        await loadRoundsData(parseInt(leagueSelect.value));
-        roundsStatus.innerHTML = '<span class="text-green-600">✓ Rounds data loaded successfully</span>';
-    } catch (error) {
-        roundsStatus.innerHTML = `<span class="text-red-600">✗ Error: ${error.message}</span>`;
-    } finally {
-        loadRoundsBtn.disabled = false;
-        loadRoundsBtn.textContent = 'Load & Edit Rounds';
-    }
-}
 
 // Populate arbiter dropdowns for all matches
 async function populateMatchArbiterDropdowns() {

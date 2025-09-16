@@ -88,3 +88,33 @@ async function showDataPreview() {
         console.error('Error loading data preview:', error);
     }
 }
+
+async function populateLeagueDropdown() {
+    const leagueSelect = document.getElementById('leagueSelect');
+    
+    try {
+        const response = await fetch('/leagues');
+        const data = await response.json();
+        
+        if (data.leagues && data.leagues.length > 0) {
+            // Clear existing options
+            leagueSelect.innerHTML = '<option value="">Select a league...</option>';
+            
+            // Add league options
+            data.leagues.forEach(league => {
+                const option = document.createElement('option');
+                option.value = league.leagueId;
+                option.textContent = `${league.leagueName} (${league.saisonName})`;
+                leagueSelect.appendChild(option);
+            });
+            
+            // Enable the dropdown
+            leagueSelect.disabled = false;
+        } else {
+            leagueSelect.innerHTML = '<option value="">No leagues available</option>';
+        }
+    } catch (error) {
+        console.error('Error loading leagues:', error);
+        leagueSelect.innerHTML = '<option value="">Error loading leagues</option>';
+    }
+}
