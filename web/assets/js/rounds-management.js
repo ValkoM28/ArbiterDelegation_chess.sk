@@ -378,3 +378,67 @@ async function onMatchArbiterSelected(roundIndex, matchIndex) {
         detailsElement.classList.add('hidden');
     }
 }
+
+// Prepare PDFData array from current rounds data
+function preparePDFDataArray() {
+    const leagueSelect = document.getElementById('leagueSelect');
+    
+    // Get league info from the form
+    const directorInfo = document.getElementById('directorField').value;
+    
+    // Get global info from rounds editor if available
+    const globalDirectorInfo = document.getElementById('globalDirectorInfo')?.value || directorInfo;
+    const globalContactPerson = document.getElementById('globalContactPerson')?.value || '';
+    
+    const pdfDataArray = [];
+    
+    // Create PDFData for each match
+    currentRounds.forEach((round, roundIndex) => {
+        round.matches.forEach((match, matchIndex) => {
+            // Get arbiter info from the match's arbiter dropdown
+            const arbiterSelect = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter`);
+            const selectedArbiterId = arbiterSelect ? arbiterSelect.value : '';
+            
+            // Get arbiter details from the details element
+            const arbiterDetails = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
+            let arbiterName = '';
+            let arbiterId = '';
+            
+            if (arbiterDetails && arbiterDetails.textContent) {
+                // Extract name and ID from the details text
+                const detailsText = arbiterDetails.textContent;
+                const nameMatch = detailsText.match(/Selected: (.+?) \(ID: (.+?)\)/);
+                if (nameMatch) {
+                    arbiterName = nameMatch[1];
+                    arbiterId = nameMatch[2];
+                }
+            }
+            
+            const pdfData = {
+                league: {
+                    name: '', // Will be filled from league data
+                    year: ''  // Will be filled from league data
+                },
+                director: {
+                    contact: globalDirectorInfo
+                },
+                arbiter: {
+                    firstName: arbiterName.split(' ')[0] || '',
+                    lastName: arbiterName.split(' ').slice(1).join(' ') || '',
+                    playerId: arbiterId
+                },
+                match: {
+                    homeTeam: match.homeTeam,
+                    guestTeam: match.guestTeam,
+                    dateTime: match.dateTime,
+                    address: match.address
+                },
+                contactPerson: globalContactPerson
+            };
+            
+            pdfDataArray.push(pdfData);
+        });
+    });
+    
+    return pdfDataArray;
+}

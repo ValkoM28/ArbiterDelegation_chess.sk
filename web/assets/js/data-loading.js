@@ -31,7 +31,6 @@ async function loadExternalData() {
             // Show data preview and populate dropdowns
             if (result.arbiters_loaded && result.leagues_loaded) {
                 showDataPreview();
-                populateArbiterDropdown();
                 populateLeagueDropdown();
             }
         } else {
