@@ -558,6 +558,9 @@ async function prepareDelegationData() {
             console.log(`Warning: ${missingArbiters.length} matches missing arbiter assignment - proceeding anyway for testing`);
         }
         
+        // Show loading state
+        roundsStatus.innerHTML = '<span class="text-blue-600">⏳ Generating PDFs and creating zip file...</span>';
+        
         // Send to backend
         const response = await fetch('/delegate-arbiters', {
             method: 'POST',
@@ -568,17 +571,58 @@ async function prepareDelegationData() {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // Handle error responses
+            try {
+                const errorData = await response.json();
+                throw new Error(`Server error: ${errorData.error || 'Unknown error'}`);
+            } catch (jsonError) {
+                const errorText = await response.text();
+                throw new Error(`Server error: ${errorText}`);
+            }
         }
         
-        const result = await response.json();
-        console.log('Delegation data sent:', result);
-        
-        roundsStatus.innerHTML = `
-            <span class="text-green-600">✓ ${result.message}</span><br>
-            <span class="text-sm text-gray-600">Count: ${result.count} items</span><br>
-            <span class="text-sm text-gray-600">Check server console for detailed output</span>
-        `;
+        // Check if response is a file download (zip)
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/zip')) {
+            // Handle zip file download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            
+            // Get filename from Content-Disposition header or use default
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'delegacne_listy.zip';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            // Create download link and trigger download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            roundsStatus.innerHTML = `
+                <span class="text-green-600">✓ PDFs generated and zip file downloaded successfully!</span><br>
+                <span class="text-sm text-gray-600">Count: ${pdfDataArray.length} items</span><br>
+                <span class="text-sm text-gray-600">File: ${filename}</span>
+            `;
+        } else {
+            // Fallback for JSON response (shouldn't happen with current backend)
+            const result = await response.json();
+            console.log('Delegation data sent:', result);
+            
+            roundsStatus.innerHTML = `
+                <span class="text-green-600">✓ ${result.message}</span><br>
+                <span class="text-sm text-gray-600">Count: ${result.count} items</span><br>
+                <span class="text-sm text-gray-600">Check server console for detailed output</span>
+            `;
+        }
         
     } catch (error) {
         console.error('Error preparing delegation data:', error);

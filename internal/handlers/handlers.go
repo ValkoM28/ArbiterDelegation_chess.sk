@@ -473,6 +473,7 @@ func RegisterRoutes(r *gin.Engine) {
 		}
 
 		// Return the zip file for download
+		c.Header("Content-Type", "application/zip")
 		c.FileAttachment(zipPath, zipName)
 	})
 }
