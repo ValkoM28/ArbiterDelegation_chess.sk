@@ -13,6 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RegisterRoutes registers all HTTP routes for the application.
+// It sets up both GET and POST endpoints for data retrieval, PDF generation, and Excel processing.
+// The routes include endpoints for arbiters, leagues, external data loading, and delegation management.
 func (app *App) RegisterRoutes(r *gin.Engine) {
 	r.GET("/external-data/:type", app.getExternalData)
 	r.GET("/arbiters", app.getArbiters)
@@ -27,7 +30,10 @@ func (app *App) RegisterRoutes(r *gin.Engine) {
 	r.POST("/load-external-data", app.loadExternalData)
 }
 
-// loadExternalData loads arbiters and leagues data from external APIs
+// loadExternalData loads arbiters and leagues data from external APIs.
+// It expects a JSON request body with a "seasonStartYear" field.
+// The function loads data from chess.sk API for both arbiters and leagues.
+// Returns a JSON response indicating success and whether data was loaded.
 func (app *App) loadExternalData(c *gin.Context) {
 	fmt.Println("DEBUG: Load external data endpoint called")
 
@@ -61,7 +67,9 @@ func (app *App) loadExternalData(c *gin.Context) {
 	})
 }
 
-// getExternalData returns raw external data by type
+// getExternalData returns raw external data by type from session storage.
+// It expects a URL parameter "type" (arbiters or leagues) and returns the raw data.
+// This endpoint is useful for debugging and inspecting the loaded data structure.
 func (app *App) getExternalData(c *gin.Context) {
 	dataType := c.Param("type")
 
@@ -74,7 +82,9 @@ func (app *App) getExternalData(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": data})
 }
 
-// getArbiters returns all arbiters
+// getArbiters returns all loaded arbiters from session storage.
+// It retrieves and returns all arbiters that have been loaded from the chess.sk API.
+// Returns a JSON response with the arbiters array or an error if no data is loaded.
 func (app *App) getArbiters(c *gin.Context) {
 	arbiters, err := app.storage.GetAllArbiters()
 	if err != nil {
@@ -276,7 +286,9 @@ func (app *App) delegateArbiters(c *gin.Context) {
 	c.FileAttachment(zipPath, zipName)
 }
 
-// buildURLWithParams constructs a URL with query parameters
+// buildURLWithParams constructs a URL with query parameters from a base URL and parameter map.
+// It safely parses the base URL and adds the provided parameters as query strings.
+// Returns the constructed URL or the original base URL if parsing fails.
 func buildURLWithParams(baseURL string, params map[string]string) string {
 	if len(params) == 0 {
 		return baseURL
@@ -339,7 +351,10 @@ func filterActiveArbiters(rawData interface{}) (map[string]interface{}, error) {
 	return resultMap, nil
 }
 
-// LoadArbiters loads arbiters data from the API and stores it in storage
+// LoadArbiters loads arbiters data from the chess.sk API and stores it in session storage.
+// It downloads active arbiters data and applies client-side filtering until the API supports status filtering.
+// The function handles URL construction, API calls, and data processing.
+// Returns an error if the API call fails or data processing encounters issues.
 func (app *App) LoadArbiters() error {
 	// Load arbiters data from your real API with hardcoded active status parameter
 	// TODO: Remove client-side filtering when chess.sk API properly supports status=active parameter
@@ -365,7 +380,10 @@ func (app *App) LoadArbiters() error {
 	return nil
 }
 
-// LoadLeagues loads leagues data from the API and stores it in storage
+// LoadLeagues loads leagues data from the chess.sk API for the specified season and stores it in session storage.
+// It constructs the API URL with the season parameter and downloads the leagues data.
+// The function handles URL construction, API calls, and data storage.
+// Returns an error if the API call fails or data processing encounters issues.
 func (app *App) LoadLeagues(seasonStartYear string) error {
 	// Load leagues data from your real API with season parameter
 	leaguesURL := fmt.Sprintf("https://chess.sk/api/leagues.php/v1/leagues?saisonStartYear=%s", seasonStartYear)

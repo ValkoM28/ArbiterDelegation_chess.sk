@@ -1,3 +1,5 @@
+// Package excel provides functionality for downloading and processing Excel files from chess-results.com.
+// It handles the extraction of tournament data, round information, and match details from Excel files.
 package excel
 
 import (
@@ -15,7 +17,10 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-// DownloadChessResultsExcel downloads an Excel file from chess-results.com
+// DownloadChessResultsExcel downloads an Excel file from chess-results.com for the given tournament ID.
+// It constructs the appropriate URL and downloads the file to a temporary location.
+// The file is saved with a timestamp to avoid conflicts.
+// Returns the file path of the downloaded Excel file or an error if the download fails.
 func DownloadChessResultsExcel(tournamentID string) (string, error) {
 	// Construct the URL for the Excel download
 	url := fmt.Sprintf("https://chess-results.com/tnr%s.aspx?lan=1&zeilen=0&art=2&prt=4&excel=2010", tournamentID)
@@ -62,12 +67,17 @@ func DownloadChessResultsExcel(tournamentID string) (string, error) {
 	return filePath, nil
 }
 
-// CleanupTempFile removes the temporary Excel file
+// CleanupTempFile removes the temporary Excel file from the filesystem.
+// This function should be called after processing the Excel file to free up disk space.
+// Returns an error if the file cannot be removed.
 func CleanupTempFile(filePath string) error {
 	return os.Remove(filePath)
 }
 
-// ExtractTournamentIDFromLeague extracts the tournament ID from a league's ChessResultsLink
+// ExtractTournamentIDFromLeague extracts the tournament ID from a league's ChessResultsLink.
+// It parses the URL to find the tournament ID which is used for downloading Excel files.
+// The tournament ID is typically found in the URL path after "tnr".
+// Returns the tournament ID as a string or an error if the URL format is invalid.
 func ExtractTournamentIDFromLeague(league *data.League) (string, error) {
 	if league.ChessResultsLink == "" {
 		return "", fmt.Errorf("league has no ChessResultsLink")
@@ -210,4 +220,3 @@ func ParseExcelForLeagueToRounds(league *data.League) ([]data.Round, error) {
 	}
 	return rounds, nil
 }
-

@@ -1,3 +1,5 @@
+// Package main provides the entry point for the chess arbiter delegation generator server.
+// It sets up the HTTP server, serves static assets, and registers API routes.
 package main
 
 import (
@@ -7,6 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// main is the entry point of the application.
+// It initializes the application, sets up the Gin router, serves static files,
+// registers API routes, and starts the HTTP server on port 8080.
 func main() {
 	// Create new App instance with all dependencies
 	application := app.New()

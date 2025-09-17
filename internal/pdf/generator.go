@@ -1,3 +1,5 @@
+// Package pdf provides functionality for generating and filling PDF forms for chess arbiter delegations.
+// It handles PDF form filling, data mapping, validation, and file generation.
 package pdf
 
 import (
@@ -10,7 +12,10 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 )
 
-// FillForm fills the PDF form with provided data
+// FillForm fills a PDF form with the provided data and saves it to a new file.
+// It reads the PDF template, fills in the form fields with the provided data map,
+// and saves the result to a new file with a unique name.
+// Returns the path to the filled PDF file or an error if the operation fails.
 func FillForm(pdfPath string, data map[string]string) (string, error) {
 	// Read the PDF file into a context
 	ctx, err := api.ReadContextFile(pdfPath)
@@ -89,5 +94,3 @@ func GeneratePDFsFromDelegateArbiters(pdfDataArray []data.PDFData, templatePath 
 
 	return generatedFiles, nil
 }
-
-
