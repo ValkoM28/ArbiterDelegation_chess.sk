@@ -3,68 +3,28 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
-	"eu.michalvalko.chess_arbiter_delegation_generator/internal/chess"
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/excel"
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/pdf"
 	"github.com/gin-gonic/gin"
 )
 
-// RegisterRoutes registers all HTTP routes with the Gin engine
 func (app *App) RegisterRoutes(r *gin.Engine) {
-	// Simple PDF generation endpoint
-	r.POST("/generate", app.generatePDF)
-
-
-	// Load external data endpoint
-	r.POST("/load-external-data", app.loadExternalData)
-
-	// Get loaded data endpoint
 	r.GET("/external-data/:type", app.getExternalData)
-
-	// Get arbiters endpoint
 	r.GET("/arbiters", app.getArbiters)
-
-	// Get leagues endpoint
 	r.GET("/leagues", app.getLeagues)
-
-	// Get specific arbiter by ID
 	r.GET("/arbiters/:id", app.getArbiterByID)
-
-	// Get specific league by ID
 	r.GET("/leagues/:id", app.getLeagueByID)
 
-	// Prepare PDF data endpoint
 	r.POST("/prepare-pdf-data", app.preparePDFData)
-
-	// Download Excel file endpoint
 	r.POST("/download-excel", app.downloadExcel)
-
-	// Get rounds data endpoint
 	r.POST("/get-rounds", app.getRounds)
-
-	// Delegate arbiters endpoint
 	r.POST("/delegate-arbiters", app.delegateArbiters)
-}
-
-// generatePDF handles simple PDF generation
-func (app *App) generatePDF(c *gin.Context) {
-	var payload map[string]string
-	if err := c.BindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	pdfPath, err := pdf.FillForm("templates/delegacny_list_ligy.pdf", payload)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.FileAttachment(pdfPath, "delegacny.pdf")
+	r.POST("/load-external-data", app.loadExternalData)
 }
 
 // loadExternalData loads arbiters and leagues data from external APIs
@@ -81,14 +41,14 @@ func (app *App) loadExternalData(c *gin.Context) {
 	}
 
 	// Load arbiters data
-	err := chess.LoadArbiters(app.storage)
+	err := app.LoadArbiters()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load arbiters: " + err.Error()})
 		return
 	}
 
 	// Load leagues data
-	err = chess.LoadLeagues(app.storage, requestBody.SeasonStartYear)
+	err = app.LoadLeagues(requestBody.SeasonStartYear)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load leagues: " + err.Error()})
 		return
@@ -116,7 +76,7 @@ func (app *App) getExternalData(c *gin.Context) {
 
 // getArbiters returns all arbiters
 func (app *App) getArbiters(c *gin.Context) {
-	arbiters, err := chess.GetArbiters(app.storage)
+	arbiters, err := app.storage.GetAllArbiters()
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -127,7 +87,7 @@ func (app *App) getArbiters(c *gin.Context) {
 
 // getLeagues returns all leagues
 func (app *App) getLeagues(c *gin.Context) {
-	leagues, err := chess.GetLeagues(app.storage)
+	leagues, err := app.storage.GetAllLeagues()
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -147,7 +107,7 @@ func (app *App) getArbiterByID(c *gin.Context) {
 		return
 	}
 
-	arbiter, err := chess.GetArbiterByID(app.storage, id)
+	arbiter, err := app.storage.GetArbiterByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -167,7 +127,7 @@ func (app *App) getLeagueByID(c *gin.Context) {
 		return
 	}
 
-	league, err := chess.GetLeagueByID(app.storage, id)
+	league, err := app.storage.GetLeagueByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -189,14 +149,14 @@ func (app *App) preparePDFData(c *gin.Context) {
 	}
 
 	// Get arbiter by ID
-	arbiter, err := chess.GetArbiterByID(app.storage, requestBody.ArbiterID)
+	arbiter, err := app.storage.GetArbiterByID(requestBody.ArbiterID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Arbiter not found: " + err.Error()})
 		return
 	}
 
 	// Get league by ID
-	league, err := chess.GetLeagueByID(app.storage, requestBody.LeagueID)
+	league, err := app.storage.GetLeagueByID(requestBody.LeagueID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
 		return
@@ -224,7 +184,7 @@ func (app *App) downloadExcel(c *gin.Context) {
 	}
 
 	// Get league by ID
-	league, err := chess.GetLeagueByID(app.storage, requestBody.LeagueID)
+	league, err := app.storage.GetLeagueByID(requestBody.LeagueID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
 		return
@@ -257,7 +217,7 @@ func (app *App) getRounds(c *gin.Context) {
 	}
 
 	// Get league by ID
-	league, err := chess.GetLeagueByID(app.storage, requestBody.LeagueID)
+	league, err := app.storage.GetLeagueByID(requestBody.LeagueID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
 		return
@@ -314,4 +274,105 @@ func (app *App) delegateArbiters(c *gin.Context) {
 	// Return the zip file for download
 	c.Header("Content-Type", "application/zip")
 	c.FileAttachment(zipPath, zipName)
+}
+
+// buildURLWithParams constructs a URL with query parameters
+func buildURLWithParams(baseURL string, params map[string]string) string {
+	if len(params) == 0 {
+		return baseURL
+	}
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL
+	}
+
+	q := u.Query()
+	for key, value := range params {
+		q.Set(key, value)
+	}
+	u.RawQuery = q.Encode()
+
+	return u.String()
+}
+
+// filterActiveArbiters filters arbiters to only include active ones
+// TEMPORARY: This function should be removed when chess.sk API properly supports status=active parameter
+func filterActiveArbiters(rawData interface{}) (map[string]interface{}, error) {
+	// Extract the actual data array from our wrapped structure
+	dataMap, ok := rawData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw data is not a map")
+	}
+
+	dataArray, ok := dataMap["data"]
+	if !ok {
+		return nil, fmt.Errorf("no 'data' field in raw data")
+	}
+
+	// Convert to slice of interfaces
+	arbitersSlice, ok := dataArray.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("data is not an array")
+	}
+
+	// Filter for active arbiters
+	var activeArbiters []interface{}
+	for _, arbiterInterface := range arbitersSlice {
+		arbiterMap, ok := arbiterInterface.(map[string]interface{})
+		if !ok {
+			continue // Skip invalid entries
+		}
+
+		// Check if IsActive is true
+		if isActive, exists := arbiterMap["IsActive"]; exists {
+			if isActiveBool, ok := isActive.(bool); ok && isActiveBool {
+				activeArbiters = append(activeArbiters, arbiterInterface)
+			}
+		}
+	}
+
+	// Create new data structure with filtered arbiters
+	resultMap := make(map[string]interface{})
+	resultMap["data"] = activeArbiters
+
+	return resultMap, nil
+}
+
+// LoadArbiters loads arbiters data from the API and stores it in storage
+func (app *App) LoadArbiters() error {
+	// Load arbiters data from your real API with hardcoded active status parameter
+	// TODO: Remove client-side filtering when chess.sk API properly supports status=active parameter
+	arbitersURL := buildURLWithParams("https://chess.sk/api/matrika.php/v1/arbiters", map[string]string{
+		"status": "active", // Currently ignored by API, but kept for when it gets fixed
+	})
+
+	err := app.storage.LoadData("arbiters", arbitersURL)
+	if err != nil {
+		return fmt.Errorf("failed to load arbiters: %v", err)
+	}
+
+	// TEMPORARY: Client-side filtering for active arbiters until chess.sk API supports status=active
+	arbitersData, exists := app.storage.Get("arbiters")
+	if exists {
+		filteredArbiters, err := filterActiveArbiters(arbitersData)
+		if err != nil {
+			return fmt.Errorf("failed to filter arbiters: %v", err)
+		}
+		app.storage.Set("arbiters", filteredArbiters)
+	}
+
+	return nil
+}
+
+// LoadLeagues loads leagues data from the API and stores it in storage
+func (app *App) LoadLeagues(seasonStartYear string) error {
+	// Load leagues data from your real API with season parameter
+	leaguesURL := fmt.Sprintf("https://chess.sk/api/leagues.php/v1/leagues?saisonStartYear=%s", seasonStartYear)
+	err := app.storage.LoadData("leagues", leaguesURL)
+	if err != nil {
+		return fmt.Errorf("failed to load leagues: %v", err)
+	}
+
+	return nil
 }
