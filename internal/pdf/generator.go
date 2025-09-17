@@ -61,7 +61,7 @@ func FillForm(pdfPath string, data map[string]string) (string, error) {
 	}
 
 	// Generate unique output filename with microsecond precision
-	outputPath := fmt.Sprintf("assets/results/delegacny_%d_%d.pdf", time.Now().Unix(), time.Now().Nanosecond())
+	outputPath := fmt.Sprintf("assets/results/%s_%s_%d.pdf", data["Text1"], data["Text2"], time.Now().Nanosecond())
 
 	// Ensure the results directory exists
 	resultsDir := "assets/results"
