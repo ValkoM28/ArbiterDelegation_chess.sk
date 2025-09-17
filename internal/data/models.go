@@ -39,6 +39,33 @@ type DirectorData struct {
 	Contact string
 }
 
+// Round represents a single round of matches
+type Round struct {
+	Number   int         `json:"number"`
+	DateTime string      `json:"dateTime"` // e.g., "2025/10/25 at 11:00"
+	Matches  []MatchInfo `json:"matches"`
+}
+
+// MatchInfo contains match-specific details
+type MatchInfo struct {
+	HomeTeam  string `json:"homeTeam"`
+	GuestTeam string `json:"guestTeam"`
+	DateTime  string `json:"dateTime"`
+	Address   string `json:"address"`
+}
+
+// League represents a league from the chess.sk API
+type League struct {
+	LeagueId          string `json:"leagueId"`
+	SaisonName        string `json:"saisonName"`
+	LeagueName        string `json:"leagueName"`
+	ChessResultsLink  string `json:"chessResultsLink"`
+	DirectorId        string `json:"directorId"`
+	DirectorSurname   string `json:"directorSurname"`
+	DirectorFirstName string `json:"directorFirstName"`
+	DirectorEmail     string `json:"directorEmail"`
+}
+
 // NewPDFData creates a new PDFData instance
 func NewPDFData() *PDFData {
 	return &PDFData{
