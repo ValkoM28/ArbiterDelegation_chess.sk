@@ -62,35 +62,3 @@ func fromLeague(league data.League) (data.LeagueData, data.DirectorData) {
 	return leagueInfo, directorInfo
 }
 
-// PrintPDFData prints the PDF data in a readable format
-func PrintPDFData(pdfData *data.PDFData) {
-	fmt.Println("=== PDF DATA ===")
-	fmt.Printf("League: %s (%s)\n", pdfData.League.Name, pdfData.League.Year)
-	fmt.Printf("Director: %s\n", pdfData.Director.Contact)
-	fmt.Printf("Arbiter: %s %s (ID: %s)\n", pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
-	fmt.Printf("Match: %s vs %s\n", pdfData.Match.HomeTeam, pdfData.Match.GuestTeam)
-	fmt.Printf("Date/Time: %s\n", pdfData.Match.DateTime)
-	fmt.Printf("Address: %s\n", pdfData.Match.Address)
-	fmt.Printf("Contact Person: %s\n", pdfData.ContactPerson)
-	fmt.Println("================")
-}
-
-// PrintPDFDataArray prints PDFData array for debugging
-func PrintPDFDataArray(pdfDataArray []data.PDFData) {
-	fmt.Printf("\n=== PDFData Array Debug Output ===\n")
-	fmt.Printf("Total items: %d\n", len(pdfDataArray))
-	fmt.Printf("=====================================\n")
-
-	for i, pdfData := range pdfDataArray {
-		fmt.Printf("\n--- Item %d ---\n", i+1)
-		fmt.Printf("League: %s (%s)\n", pdfData.League.Name, pdfData.League.Year)
-		fmt.Printf("Director: %s\n", pdfData.Director.Contact)
-		fmt.Printf("Arbiter: %s %s (ID: %s)\n", pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
-		fmt.Printf("Match: %s vs %s\n", pdfData.Match.HomeTeam, pdfData.Match.GuestTeam)
-		fmt.Printf("DateTime: %s\n", pdfData.Match.DateTime)
-		fmt.Printf("Address: %s\n", pdfData.Match.Address)
-		fmt.Printf("Contact Person: %s\n", pdfData.ContactPerson)
-	}
-
-	fmt.Printf("\n=== End Debug Output ===\n")
-}

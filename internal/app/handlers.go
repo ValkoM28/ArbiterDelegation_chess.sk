@@ -205,9 +205,6 @@ func (app *App) preparePDFData(c *gin.Context) {
 	// Prepare PDF data
 	pdfData := pdf.PreparePDFDataFromArbiterAndLeague(arbiter, league)
 
-	// Print the data to console
-	pdf.PrintPDFData(pdfData)
-
 	// Return the prepared data to frontend
 	c.JSON(http.StatusOK, gin.H{
 		"message": "PDF data prepared and printed to console",
@@ -291,9 +288,6 @@ func (app *App) delegateArbiters(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-
-	// Prepare data for function call
-	pdf.PrintPDFDataArray(requestBody)
 
 	// Generate PDFs
 	generatedFiles, err := pdf.GeneratePDFsFromDelegateArbiters(requestBody, "templates/delegacny_list_ligy.pdf")
