@@ -102,7 +102,6 @@ func DownloadExcelForLeague(league *data.League) (string, error) {
 	return filePath, nil
 }
 
-
 func isNumeric(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil
@@ -200,7 +199,14 @@ func ParseExcelForLeagueToRounds(league *data.League) ([]data.Round, error) {
 	// Parse the Excel file
 	rounds, err := ParseChessResultsExcelToRounds(filePath)
 	if err != nil {
+		// Clean up Excel file even if parsing fails
+		CleanupTempFile(filePath)
 		return nil, fmt.Errorf("failed to parse Excel file: %v", err)
+	}
+
+	// Clean up Excel file immediately after parsing
+	if err := CleanupTempFile(filePath); err != nil {
+		fmt.Printf("Warning: failed to cleanup Excel file %s: %v\n", filePath, err)
 	}
 
 	PrintRounds(rounds)
