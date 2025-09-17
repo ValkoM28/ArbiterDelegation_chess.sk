@@ -108,8 +108,8 @@ func fetchFromAPI(url string) (map[string]interface{}, error) {
 	return resultMap, nil
 }
 
-// ProcessArbitersData processes raw API data and extracts arbiters
-func ProcessArbitersData(rawData interface{}) ([]Arbiter, error) {
+// ProcessData processes raw API data and extracts structured data
+func ProcessData[T any](rawData interface{}) ([]T, error) {
 	// Extract the actual data array from our wrapped structure
 	dataMap, ok := rawData.(map[string]interface{})
 	if !ok {
@@ -128,40 +128,22 @@ func ProcessArbitersData(rawData interface{}) ([]Arbiter, error) {
 	}
 
 	// Parse into structured data
-	var arbiters []Arbiter
-	if err := json.Unmarshal(jsonData, &arbiters); err != nil {
-		return nil, fmt.Errorf("error unmarshaling arbiters data: %v", err)
+	var result []T
+	if err := json.Unmarshal(jsonData, &result); err != nil {
+		return nil, fmt.Errorf("error unmarshaling data: %v", err)
 	}
 
-	return arbiters, nil
+	return result, nil
+}
+
+// ProcessArbitersData processes raw API data and extracts arbiters
+func ProcessArbitersData(rawData interface{}) ([]Arbiter, error) {
+	return ProcessData[Arbiter](rawData)
 }
 
 // ProcessLeaguesData processes raw API data and extracts leagues
 func ProcessLeaguesData(rawData interface{}) ([]League, error) {
-	// Extract the actual data array from our wrapped structure
-	dataMap, ok := rawData.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("raw data is not a map")
-	}
-
-	dataArray, ok := dataMap["data"]
-	if !ok {
-		return nil, fmt.Errorf("no 'data' field in raw data")
-	}
-
-	// Convert to JSON bytes
-	jsonData, err := json.Marshal(dataArray)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling raw data: %v", err)
-	}
-
-	// Parse into structured data
-	var leagues []League
-	if err := json.Unmarshal(jsonData, &leagues); err != nil {
-		return nil, fmt.Errorf("error unmarshaling leagues data: %v", err)
-	}
-
-	return leagues, nil
+	return ProcessData[League](rawData)
 }
 
 // GetArbiterByID finds an arbiter by ID from the loaded data

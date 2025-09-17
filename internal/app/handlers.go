@@ -215,10 +215,10 @@ func (app *App) preparePDFData(c *gin.Context) {
 	}
 
 	// Prepare PDF data
-	pdfData := preparePDFDataFromArbiterAndLeague(arbiter, league)
+	pdfData := pdf.PreparePDFDataFromArbiterAndLeague(arbiter, league)
 
 	// Print the data to console
-	printPDFData(pdfData)
+	pdf.PrintPDFData(pdfData)
 
 	// Return the prepared data to frontend
 	c.JSON(http.StatusOK, gin.H{
@@ -305,7 +305,7 @@ func (app *App) delegateArbiters(c *gin.Context) {
 	}
 
 	// Prepare data for function call
-	printPDFDataArray(requestBody)
+	pdf.PrintPDFDataArray(requestBody)
 
 	// Generate PDFs
 	generatedFiles, err := pdf.GeneratePDFsFromDelegateArbiters(requestBody, "templates/delegacny_list_ligy.pdf")
@@ -332,95 +332,4 @@ func (app *App) delegateArbiters(c *gin.Context) {
 	// Return the zip file for download
 	c.Header("Content-Type", "application/zip")
 	c.FileAttachment(zipPath, zipName)
-}
-
-// Helper functions
-
-// preparePDFDataFromArbiterAndLeague creates PDF data from arbiter and league
-func preparePDFDataFromArbiterAndLeague(arbiter *data.Arbiter, league *data.League) *data.PDFData {
-	pdfData := data.NewPDFData()
-
-	// Set league and director from selected league
-	leagueInfo, directorInfo := fromLeague(*league)
-	pdfData.SetLeague(leagueInfo)
-	pdfData.SetDirector(directorInfo)
-
-	// Set arbiter
-	arbiterInfo := fromArbiter(*arbiter)
-	pdfData.SetArbiter(arbiterInfo)
-
-	// Set match details (you'll provide logic later)
-	pdfData.SetMatch(data.MatchData{
-		HomeTeam:  "Team A",
-		GuestTeam: "Team B",
-		DateTime:  "2024-10-15 14:00",
-		Address:   "Chess Center Bratislava",
-	})
-
-	// Set contact person (you'll provide logic later)
-	pdfData.SetContactPerson("John Doe")
-
-	return pdfData
-}
-
-// fromArbiter converts a chess Arbiter to ArbiterInfo
-func fromArbiter(arbiter data.Arbiter) data.ArbiterData {
-	return data.ArbiterData{
-		FirstName: arbiter.FirstName,
-		LastName:  arbiter.LastName,
-		PlayerID:  arbiter.PlayerId,
-	}
-}
-
-// fromLeague converts a chess League to LeagueInfo and DirectorInfo
-func fromLeague(league data.League) (data.LeagueData, data.DirectorData) {
-	leagueInfo := data.LeagueData{
-		Name: league.LeagueName,
-		Year: league.SaisonName,
-	}
-
-	// Combine director name and email into a single contact string
-	directorContact := fmt.Sprintf("%s %s", league.DirectorFirstName, league.DirectorSurname)
-	if league.DirectorEmail != "" {
-		directorContact += fmt.Sprintf(" (%s)", league.DirectorEmail)
-	}
-
-	directorInfo := data.DirectorData{
-		Contact: directorContact,
-	}
-
-	return leagueInfo, directorInfo
-}
-
-// printPDFData prints the PDF data in a readable format
-func printPDFData(pdfData *data.PDFData) {
-	fmt.Println("=== PDF DATA ===")
-	fmt.Printf("League: %s (%s)\n", pdfData.League.Name, pdfData.League.Year)
-	fmt.Printf("Director: %s\n", pdfData.Director.Contact)
-	fmt.Printf("Arbiter: %s %s (ID: %s)\n", pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
-	fmt.Printf("Match: %s vs %s\n", pdfData.Match.HomeTeam, pdfData.Match.GuestTeam)
-	fmt.Printf("Date/Time: %s\n", pdfData.Match.DateTime)
-	fmt.Printf("Address: %s\n", pdfData.Match.Address)
-	fmt.Printf("Contact Person: %s\n", pdfData.ContactPerson)
-	fmt.Println("================")
-}
-
-// printPDFDataArray prints PDFData array for debugging
-func printPDFDataArray(pdfDataArray []data.PDFData) {
-	fmt.Printf("\n=== PDFData Array Debug Output ===\n")
-	fmt.Printf("Total items: %d\n", len(pdfDataArray))
-	fmt.Printf("=====================================\n")
-
-	for i, pdfData := range pdfDataArray {
-		fmt.Printf("\n--- Item %d ---\n", i+1)
-		fmt.Printf("League: %s (%s)\n", pdfData.League.Name, pdfData.League.Year)
-		fmt.Printf("Director: %s\n", pdfData.Director.Contact)
-		fmt.Printf("Arbiter: %s %s (ID: %s)\n", pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
-		fmt.Printf("Match: %s vs %s\n", pdfData.Match.HomeTeam, pdfData.Match.GuestTeam)
-		fmt.Printf("DateTime: %s\n", pdfData.Match.DateTime)
-		fmt.Printf("Address: %s\n", pdfData.Match.Address)
-		fmt.Printf("Contact Person: %s\n", pdfData.ContactPerson)
-	}
-
-	fmt.Printf("\n=== End Debug Output ===\n")
 }
