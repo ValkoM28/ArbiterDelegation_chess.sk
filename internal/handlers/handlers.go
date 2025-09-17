@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
@@ -456,11 +457,24 @@ func RegisterRoutes(r *gin.Engine) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"message":        "PDFs generated successfully",
-			"count":          len(requestBody),
-			"generatedFiles": generatedFiles,
-		})
+		// Create zip file with all generated PDFs
+		zipName := fmt.Sprintf("delegacne_listy_%d.zip", time.Now().Unix())
+		zipPath, err := pdf.CreateZipFromFiles(generatedFiles, zipName)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create zip file: " + err.Error()})
+			return
+		}
+
+		// Clean up individual PDF files after creating zip
+		for _, file := range generatedFiles {
+			if err := os.Remove(file); err != nil {
+				fmt.Printf("Warning: failed to remove temporary PDF file %s: %v\n", file, err)
+			}
+		}
+
+		// Return the zip file for download
+		c.Header("Content-Type", "application/zip")
+		c.FileAttachment(zipPath, zipName)
 	})
 }
 
