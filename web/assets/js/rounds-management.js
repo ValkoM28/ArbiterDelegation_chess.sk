@@ -572,13 +572,15 @@ async function prepareDelegationData() {
         
         if (!response.ok) {
             // Handle error responses
+            let errorMessage = `Server error: ${response.status} ${response.statusText}`;
             try {
                 const errorData = await response.json();
-                throw new Error(`Server error: ${errorData.error || 'Unknown error'}`);
+                errorMessage = `Server error: ${errorData.error || 'Unknown error'}`;
             } catch (jsonError) {
-                const errorText = await response.text();
-                throw new Error(`Server error: ${errorText}`);
+                // If JSON parsing fails, we'll use the default error message
+                console.warn('Could not parse error response as JSON:', jsonError);
             }
+            throw new Error(errorMessage);
         }
         
         // Check if response is a file download (zip)
