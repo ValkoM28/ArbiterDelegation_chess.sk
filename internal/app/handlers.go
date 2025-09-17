@@ -18,8 +18,6 @@ func (app *App) RegisterRoutes(r *gin.Engine) {
 	// Simple PDF generation endpoint
 	r.POST("/generate", app.generatePDF)
 
-	// List PDF fields endpoint
-	r.GET("/list-fields", app.listFields)
 
 	// Load external data endpoint
 	r.POST("/load-external-data", app.loadExternalData)
@@ -67,16 +65,6 @@ func (app *App) generatePDF(c *gin.Context) {
 	}
 
 	c.FileAttachment(pdfPath, "delegacny.pdf")
-}
-
-// listFields lists all fillable fields in the PDF template
-func (app *App) listFields(c *gin.Context) {
-	// Note: ListFillableFields was removed from the refactored PDF package
-	// This endpoint can be removed or implemented differently if needed
-	c.JSON(http.StatusOK, gin.H{
-		"message": "PDF field listing not available in refactored version",
-		"fields":  []string{},
-	})
 }
 
 // loadExternalData loads arbiters and leagues data from external APIs
