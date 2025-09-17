@@ -3,13 +3,13 @@ package main
 import (
 	"log"
 
-	"eu.michalvalko.chess_arbiter_delegation_generator/internal/handlers"
+	"eu.michalvalko.chess_arbiter_delegation_generator/internal/app"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// Initialize session data storage
-	handlers.InitializeSessionData()
+	// Create new App instance with all dependencies
+	application := app.New()
 
 	// Create Gin router
 	r := gin.Default()
@@ -18,7 +18,7 @@ func main() {
 	r.Static("/assets", "./web/assets")
 
 	// Register API routes
-	handlers.RegisterRoutes(r)
+	application.RegisterRoutes(r)
 
 	// Serve frontend for root path
 	r.GET("/", func(c *gin.Context) {

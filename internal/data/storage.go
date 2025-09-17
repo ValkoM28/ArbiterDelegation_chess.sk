@@ -1,0 +1,227 @@
+package data
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"sync"
+	"time"
+)
+
+// SessionData represents our simple in-memory data storage for the session
+// Much simpler - no timestamps, no expiration, just load once and use
+type SessionData struct {
+	data  map[string]interface{} // The actual data
+	mutex sync.RWMutex           // For thread safety
+}
+
+// NewSessionData creates a new SessionData instance
+func NewSessionData() *SessionData {
+	return &SessionData{
+		data: make(map[string]interface{}),
+	}
+}
+
+// Get retrieves data from session storage
+func (sd *SessionData) Get(key string) (interface{}, bool) {
+	sd.mutex.RLock()         // Lock for reading
+	defer sd.mutex.RUnlock() // Unlock when function exits
+
+	data, exists := sd.data[key]
+	return data, exists
+}
+
+// Set stores data in session storage
+func (sd *SessionData) Set(key string, value interface{}) {
+	sd.mutex.Lock()         // Lock for writing
+	defer sd.mutex.Unlock() // Unlock when function exits
+
+	sd.data[key] = value
+}
+
+// LoadData loads data from external API and stores it
+func (sd *SessionData) LoadData(key string, url string) error {
+	// This will call our HTTP client function
+	data, err := fetchFromAPI(url)
+	if err != nil {
+		return err
+	}
+
+	// Store the data
+	sd.Set(key, data)
+	return nil
+}
+
+// Clear removes all data from session storage
+func (sd *SessionData) Clear() {
+	sd.mutex.Lock()
+	defer sd.mutex.Unlock()
+
+	sd.data = make(map[string]interface{})
+}
+
+// HasData checks if we have data for a key
+func (sd *SessionData) HasData(key string) bool {
+	sd.mutex.RLock()
+	defer sd.mutex.RUnlock()
+
+	_, exists := sd.data[key]
+	return exists
+}
+
+// fetchFromAPI makes an HTTP request to get data
+func fetchFromAPI(url string) (map[string]interface{}, error) {
+	// Create an HTTP client with a timeout
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Make the HTTP GET request
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if the response was successful
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status code: %d", resp.StatusCode)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	// Parse the JSON response - it could be an array or an object
+	var result interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %v", err)
+	}
+
+	// Convert to map format for consistency
+	resultMap := make(map[string]interface{})
+	resultMap["data"] = result
+
+	return resultMap, nil
+}
+
+// ProcessArbitersData processes raw API data and extracts arbiters
+func ProcessArbitersData(rawData interface{}) ([]Arbiter, error) {
+	// Extract the actual data array from our wrapped structure
+	dataMap, ok := rawData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw data is not a map")
+	}
+
+	dataArray, ok := dataMap["data"]
+	if !ok {
+		return nil, fmt.Errorf("no 'data' field in raw data")
+	}
+
+	// Convert to JSON bytes
+	jsonData, err := json.Marshal(dataArray)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling raw data: %v", err)
+	}
+
+	// Parse into structured data
+	var arbiters []Arbiter
+	if err := json.Unmarshal(jsonData, &arbiters); err != nil {
+		return nil, fmt.Errorf("error unmarshaling arbiters data: %v", err)
+	}
+
+	return arbiters, nil
+}
+
+// ProcessLeaguesData processes raw API data and extracts leagues
+func ProcessLeaguesData(rawData interface{}) ([]League, error) {
+	// Extract the actual data array from our wrapped structure
+	dataMap, ok := rawData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw data is not a map")
+	}
+
+	dataArray, ok := dataMap["data"]
+	if !ok {
+		return nil, fmt.Errorf("no 'data' field in raw data")
+	}
+
+	// Convert to JSON bytes
+	jsonData, err := json.Marshal(dataArray)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling raw data: %v", err)
+	}
+
+	// Parse into structured data
+	var leagues []League
+	if err := json.Unmarshal(jsonData, &leagues); err != nil {
+		return nil, fmt.Errorf("error unmarshaling leagues data: %v", err)
+	}
+
+	return leagues, nil
+}
+
+// GetArbiterByID finds an arbiter by ID from the loaded data
+func (sd *SessionData) GetArbiterByID(arbiterID int) (*Arbiter, error) {
+	rawData, exists := sd.Get("arbiters")
+	if !exists {
+		return nil, fmt.Errorf("arbiters data not loaded")
+	}
+
+	arbiters, err := ProcessArbitersData(rawData)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, arbiter := range arbiters {
+		if arbiter.ArbiterId == fmt.Sprintf("%d", arbiterID) {
+			return &arbiter, nil
+		}
+	}
+
+	return nil, fmt.Errorf("arbiter with ID %d not found", arbiterID)
+}
+
+// GetLeagueByID finds a league by ID from the loaded data
+func (sd *SessionData) GetLeagueByID(leagueID int) (*League, error) {
+	rawData, exists := sd.Get("leagues")
+	if !exists {
+		return nil, fmt.Errorf("leagues data not loaded")
+	}
+
+	leagues, err := ProcessLeaguesData(rawData)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, league := range leagues {
+		if league.LeagueId == fmt.Sprintf("%d", leagueID) {
+			return &league, nil
+		}
+	}
+
+	return nil, fmt.Errorf("league with ID %d not found", leagueID)
+}
+
+// GetAllArbiters returns all loaded arbiters
+func (sd *SessionData) GetAllArbiters() ([]Arbiter, error) {
+	rawData, exists := sd.Get("arbiters")
+	if !exists {
+		return nil, fmt.Errorf("arbiters data not loaded")
+	}
+
+	return ProcessArbitersData(rawData)
+}
+
+// GetAllLeagues returns all loaded leagues
+func (sd *SessionData) GetAllLeagues() ([]League, error) {
+	rawData, exists := sd.Get("leagues")
+	if !exists {
+		return nil, fmt.Errorf("leagues data not loaded")
+	}
+
+	return ProcessLeaguesData(rawData)
+}

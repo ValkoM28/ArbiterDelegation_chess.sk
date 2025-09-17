@@ -66,6 +66,21 @@ type League struct {
 	DirectorEmail     string `json:"directorEmail"`
 }
 
+// Arbiter represents an arbiter from the chess.sk API
+type Arbiter struct {
+	ArbiterId    string `json:"ArbiterId"`
+	PlayerId     string `json:"PlayerId"`
+	FideId       string `json:"FideId"`
+	LastName     string `json:"LastName"`
+	FirstName    string `json:"FirstName"`
+	ValidTo      string `json:"ValidTo"`
+	Licencia     string `json:"Licencia"`
+	KlubId       string `json:"KlubId"`
+	KlubName     string `json:"KlubName"`
+	IsActive     bool   `json:"IsActive"`
+	ArbiterLevel string `json:"ArbiterLevel"`
+}
+
 // NewPDFData creates a new PDFData instance
 func NewPDFData() *PDFData {
 	return &PDFData{
@@ -95,4 +110,29 @@ func (p *PDFData) Validate() error {
 		return fmt.Errorf("director contact is required")
 	}
 	return nil
+}
+
+// SetLeague sets the league information
+func (p *PDFData) SetLeague(league LeagueData) {
+	p.League = league
+}
+
+// SetDirector sets the director information
+func (p *PDFData) SetDirector(director DirectorData) {
+	p.Director = director
+}
+
+// SetArbiter sets the arbiter information
+func (p *PDFData) SetArbiter(arbiter ArbiterData) {
+	p.Arbiter = arbiter
+}
+
+// SetMatch sets the match information
+func (p *PDFData) SetMatch(match MatchData) {
+	p.Match = match
+}
+
+// SetContactPerson sets the contact person
+func (p *PDFData) SetContactPerson(contactPerson string) {
+	p.ContactPerson = contactPerson
 }
