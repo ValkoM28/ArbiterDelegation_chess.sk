@@ -208,24 +208,6 @@ func ParseExcelForLeagueToRounds(league *data.League) ([]data.Round, error) {
 	if err := CleanupTempFile(filePath); err != nil {
 		fmt.Printf("Warning: failed to cleanup Excel file %s: %v\n", filePath, err)
 	}
-
-	PrintRounds(rounds)
 	return rounds, nil
 }
 
-// PrintRounds prints the parsed rounds data for debugging
-func PrintRounds(rounds []data.Round) {
-	fmt.Printf("Found %d rounds:\n", len(rounds))
-	fmt.Println(strings.Repeat("=", 80))
-
-	for _, round := range rounds {
-		fmt.Printf("Round %d - %s\n", round.Number, round.DateTime)
-		fmt.Printf("  Matches: %d\n", len(round.Matches))
-		fmt.Println(strings.Repeat("-", 40))
-
-		for i, match := range round.Matches {
-			fmt.Printf("  Match %d: %s vs %s\n", i+1, match.HomeTeam, match.GuestTeam)
-		}
-		fmt.Println()
-	}
-}
