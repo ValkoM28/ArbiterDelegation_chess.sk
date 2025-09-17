@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 )
@@ -60,8 +60,8 @@ func FillForm(pdfPath string, data map[string]string) (string, error) {
 		return "", fmt.Errorf("error filling form fields: %v", err)
 	}
 
-	// Generate unique output filename with microsecond precision
-	outputPath := fmt.Sprintf("assets/results/%s_%s_%d.pdf", data["Text1"], data["Text2"], time.Now().Nanosecond())
+	// Generate unique output filename with UUID
+	outputPath := fmt.Sprintf("assets/results/%s_%s_%s.pdf", data["Text1"], data["Text2"], uuid.New().String()[:8])
 
 	// Ensure the results directory exists
 	resultsDir := "assets/results"
