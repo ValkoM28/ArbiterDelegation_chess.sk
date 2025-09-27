@@ -4,25 +4,18 @@ Webová aplikácia na automatizáciu vytvárania delegačných listov pre šacho
 
 Oficiálne používaná na delegáciu rozhodcov majstrovských súťaží SŠZ (Extraliga, 1. Liga, 2. Liga)
 
-## 🚀 Rýchly štart
+## Spustenie programu
 
-### Možnosť 1: Stiahnutie binárneho súboru (Odporúčané pre používateľov)
+### Možnosť 1: Stiahnutie exe súboru 
 
 #### Predpoklady
 - Internetové pripojenie (pre prístup k API)
 
 #### Stiahnutie a spustenie
-1. **Stiahnite si .exe súbor** zo stránky vydaní (Releases)
-2. **Rozbaľte súbory** do priečinka na vašom počítači
-3. **Spustite aplikáciu**:
-   ```bash
-   # Na Windows
-   server.exe
-   
-   # Na Linux/macOS
-   ./server
-   ```
-4. **Otvorte si prehliadač** a prejdite na: `http://localhost:8080`
+1. **Stiahnite si .exe súbor** zo stránky vydaní (Releases). Ktorý zip si stiahnete záleží od Vášho PC. Najbežnejšie však bude potrebná verzia amd64. Ak máte procesor, ktorý nie je AMD ani Intel, bude potrebná verzia arm64. 
+2. **Rozbaľte zip súbor**
+3. **Spustite aplikáciu**: server.exe
+4. **Otvorte prehliadač** a prejdite na: `http://localhost:8080`
 
 ### Možnosť 2: Kompilácia zo zdrojového kódu (Pre vývojárov)
 
@@ -43,7 +36,7 @@ go run cmd/server/main.go
 ### Prístup k aplikácii
 Otvorte si prehliadač a prejdite na: `http://localhost:8080`
 
-## 📋 Ako používať
+## 📋 Postup používania
 
 ### 1. Načítanie dát z chess.sk
 - Kliknite na **"Načítaj dáta z chess.sk"**
@@ -60,28 +53,9 @@ Otvorte si prehliadač a prejdite na: `http://localhost:8080`
 - Systém extrahuje informácie o kolách a zápasoch
 
 ### 4. Generovanie delegácie
-- Kliknite na **"Pripraviť PDF dáta"** na prípravu dát
 - Kliknite na **"Delegovať rozhodcov"** na generovanie PDF formulárov
 - Stiahnite si ZIP súbor so všetkými vygenerovanými PDF
 
-## ✨ Funkcie
-
-- **🔄 Automatické načítanie dát**: Načítava rozhodcov a ligy z API chess.sk
-- **📊 Spracovanie Excel**: Sťahuje a spracováva turnajové dáta z chess-results.com
-- **📄 Generovanie PDF**: Vytvára delegácie s informáciami o rozhodcoch a zápasoch
-- **🌐 Webové rozhranie**: Jednoduché, používateľsky prívetivé rozhranie v slovenčine
-- **📦 Hromadné spracovanie**: Spracováva viacero rozhodcov a zápasov súčasne
-- **💾 ZIP sťahovanie**: Automaticky balí vygenerované PDF pre jednoduché sťahovanie
-
-### Pre používateľov
-- Hlásenie chýb a návrhy na zlepšenie
-- Testovanie nových funkcií a poskytovanie spätnej väzby
-- Zdieľanie vašich skúseností s aplikáciou
-
-### Pre vývojárov
-- Oprava chýb a pridávanie nových funkcií
-- Zlepšovanie dokumentácie a kvality kódu
-- Pridávanie testov a zlepšovanie výkonu
 
 Pozrite si [DOCS.md](DOCS.md) pre podrobnú technickú dokumentáciu a pokyny pre príspevky.
 
