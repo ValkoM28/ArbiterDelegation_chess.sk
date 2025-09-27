@@ -1,4 +1,4 @@
-# Generátor delegácie rozhodcov (for English scroll down)
+# Generátor delegácie rozhodcov
 
 Webová aplikácia na automatizáciu vytvárania delegačných listov pre šachových rozhodcov na Slovensku. Systém sa integruje s API chess.sk a chess-results.com. 
 
