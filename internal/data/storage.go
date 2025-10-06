@@ -170,8 +170,8 @@ func ProcessLeaguesData(rawData interface{}) ([]League, error) {
 }
 
 // GetArbiterByID finds an arbiter by ID from the loaded arbiters data.
-// It searches through all loaded arbiters and returns the one with the matching ArbiterId.
-// The arbiterID parameter is converted to string for comparison with the ArbiterId field.
+// It searches through all loaded arbiters and returns the one with the matching PlayerId.
+// The arbiterID parameter is converted to string for comparison with the PlayerId field.
 // Returns a pointer to the found Arbiter or an error if not found or data not loaded.
 func (sd *SessionData) GetArbiterByID(arbiterID int) (*Arbiter, error) {
 	rawData, exists := sd.Get("arbiters")
@@ -185,7 +185,7 @@ func (sd *SessionData) GetArbiterByID(arbiterID int) (*Arbiter, error) {
 	}
 
 	for _, arbiter := range arbiters {
-		if arbiter.ArbiterId == fmt.Sprintf("%d", arbiterID) {
+		if arbiter.PlayerId == fmt.Sprintf("%d", arbiterID) {
 			return &arbiter, nil
 		}
 	}
