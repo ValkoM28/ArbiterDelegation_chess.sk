@@ -20,16 +20,16 @@ type FieldMapping struct {
 
 // DefaultFieldMapping provides the standard field mapping for the PDF template
 var DefaultFieldMapping = FieldMapping{
-	ArbiterFirstName: "Text1",
-	ArbiterLastName:  "Text2",
-	ArbiterPlayerID:  "Text3",
-	LeagueAndYear:    "Text4",
-	HomeTeam:         "Text5",
-	GuestTeam:        "Text6",
-	DateTime:         "Text7",
-	Address:          "Text8",
-	DirectorContact:  "Text9",
-	ContactPerson:    "Text10",
+	ArbiterFirstName: "text_2qqiu",
+	ArbiterLastName:  "text_1nzhs",
+	ArbiterPlayerID:  "text_3bxac",
+	LeagueAndYear:    "text_4ab",
+	GuestTeam:        "text_7ubi",  // Fixed: GuestTeam goes to date field
+	DateTime:         "text_5ohxu", // Fixed: DateTime goes to guest team field
+	HomeTeam:         "text_6wdxk",
+	Address:          "text_8hipe",
+	DirectorContact:  "text_9lqnq",
+	ContactPerson:    "text_10cjzk",
 }
 
 // MapDataToFields converts PDFData to the field mapping format used by the PDF form
