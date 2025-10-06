@@ -388,8 +388,8 @@ function selectArbiter(roundIndex, matchIndex, arbiter) {
     // Hide dropdown
     dropdown.classList.add('hidden');
     
-    // Store selected arbiter ID for later use
-    searchInput.setAttribute('data-arbiter-id', arbiter.ArbiterId);
+    // Store selected arbiter ID for later use (using PlayerId as official Slovak chess federation ID)
+    searchInput.setAttribute('data-arbiter-id', arbiter.PlayerId);
     
     // Show arbiter details
     showArbiterDetails(roundIndex, matchIndex, arbiter);
@@ -496,7 +496,7 @@ function preparePDFDataArray() {
                     arbiterClubName = arbiterMatch[3] || '';
                 }
             }
-            
+
             const pdfData = {
                 league: {
                     name: leagueName,
