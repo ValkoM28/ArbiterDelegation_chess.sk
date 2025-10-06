@@ -38,7 +38,10 @@ func FillForm(pdfPath string, data map[string]string) (string, error) {
 	}
 
 	// Generate unique output filename with UUID
-	outputPath := fmt.Sprintf("assets/results/%s_%s_%s.pdf", data["Text1"], data["Text2"], uuid.New().String()[:8])
+	outputPath := fmt.Sprintf("assets/results/%s_%s_%s.pdf", data["text_1nzhs"], data["text_2qqiu"], uuid.New().String()[:8])
+
+	// DEBUG: Log the generated filename
+	fmt.Printf("DEBUG GENERATOR: Generated filename: %s\n", outputPath)
 
 	// Ensure the results directory exists
 	resultsDir := "assets/results"

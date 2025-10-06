@@ -259,6 +259,20 @@ func (app *App) delegateArbiters(c *gin.Context) {
 		return
 	}
 
+	// DEBUG: Log received data
+	fmt.Printf("DEBUG: Received %d PDF data items\n", len(requestBody))
+	for i, pdfData := range requestBody {
+		fmt.Printf("DEBUG: PDF Data %d:\n", i)
+		fmt.Printf("  Arbiter: FirstName='%s', LastName='%s', PlayerID='%s'\n",
+			pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
+		fmt.Printf("  League: Name='%s', Year='%s'\n",
+			pdfData.League.Name, pdfData.League.Year)
+		fmt.Printf("  Match: HomeTeam='%s', GuestTeam='%s', DateTime='%s', Address='%s'\n",
+			pdfData.Match.HomeTeam, pdfData.Match.GuestTeam, pdfData.Match.DateTime, pdfData.Match.Address)
+		fmt.Printf("  Director: Contact='%s'\n", pdfData.Director.Contact)
+		fmt.Printf("  ContactPerson: '%s'\n", pdfData.ContactPerson)
+	}
+
 	// Generate PDFs
 	generatedFiles, err := pdf.GeneratePDFsFromDelegateArbiters(requestBody, "templates/delegacny_list_ligy.pdf")
 	if err != nil {
