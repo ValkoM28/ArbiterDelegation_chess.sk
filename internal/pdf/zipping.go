@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
+	"eu.michalvalko.chess_arbiter_delegation_generator/internal/logger"
 )
 
 func CreateZipFromFiles(pdfFiles []string, zipName string) (string, error) {
@@ -89,9 +90,10 @@ func GeneratePDFsAndZip(pdfDataArray []data.PDFData, templatePath string, zipNam
 	// Clean up individual PDF files after creating zip
 	for _, file := range generatedFiles {
 		if err := os.Remove(file); err != nil {
-			fmt.Printf("Warning: failed to remove temporary PDF file %s: %v\n", file, err)
+			logger.Error("Failed to remove temporary PDF file %s: %v", file, err)
 		}
 	}
 
+	logger.Info("Created zip file: %s", zipPath)
 	return zipPath, nil
 }

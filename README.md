@@ -124,6 +124,38 @@ go run cmd/server/main.go
 ### Access the Application
 Open your browser and go to: `http://localhost:8080`
 
+## 🔍 Logging
+
+The application uses a file-based logging system that saves logs to the `logs/` directory.
+
+### Log Files
+- Log files are created daily with the format: `app_YYYY-MM-DD.log`
+- Logs are automatically rotated and old logs (>30 days) are cleaned up
+- Both INFO and ERROR messages are logged to file and console
+- DEBUG messages are only logged to file (not to console)
+
+### Enable Debug Logging
+To enable verbose debug logging, set the `DEBUG` environment variable:
+
+```bash
+# Linux/macOS
+export DEBUG=true
+go run cmd/server/main.go
+
+# Windows PowerShell
+$env:DEBUG="true"
+.\server.exe
+
+# Windows CMD
+set DEBUG=true
+server.exe
+```
+
+### Log Location
+- Logs are stored in: `logs/app_YYYY-MM-DD.log`
+- Each request, error, and important operation is logged with timestamps
+- The log directory is automatically created on first run
+
 ## 📋 How to Use
 
 ### 1. Load Data from chess.sk
