@@ -6,35 +6,101 @@ let contactPerson = '';
 
 // Load rounds data for a specific league
 async function loadRoundsData(leagueId) {
+    console.log('[ROUNDS-LOADING] ===== START loadRoundsData =====');
+    console.log('[ROUNDS-LOADING] League ID:', leagueId);
+    console.log('[ROUNDS-LOADING] League ID type:', typeof leagueId);
+
     try {
+        console.log('[ROUNDS-LOADING] Preparing POST request to /get-rounds');
+        const requestBody = { leagueId: leagueId };
+        console.log('[ROUNDS-LOADING] Request body:', JSON.stringify(requestBody));
+
+        const requestStartTime = performance.now();
         const response = await fetch('/get-rounds', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ leagueId: leagueId })
+            body: JSON.stringify(requestBody)
         });
+        const requestEndTime = performance.now();
+        const requestDuration = (requestEndTime - requestStartTime).toFixed(2);
+
+        console.log('[ROUNDS-LOADING] Response received in', requestDuration, 'ms');
+        console.log('[ROUNDS-LOADING] Response status:', response.status);
+        console.log('[ROUNDS-LOADING] Response ok:', response.ok);
+        console.log('[ROUNDS-LOADING] Response headers:', Object.fromEntries(response.headers.entries()));
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[ROUNDS-LOADING] ✗ HTTP error! status:', response.status);
+            console.error('[ROUNDS-LOADING] Error response body:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        const parseStartTime = performance.now();
         const data = await response.json();
-        currentRounds = data.rounds;
+        const parseEndTime = performance.now();
+        const parseDuration = (parseEndTime - parseStartTime).toFixed(2);
+
+        console.log('[ROUNDS-LOADING] JSON parsed in', parseDuration, 'ms');
+        console.log('[ROUNDS-LOADING] Response data structure:', {
+            hasRounds: !!data.rounds,
+            roundsCount: data.rounds ? data.rounds.length : 0,
+            hasLeague: !!data.league,
+            leagueName: data.league ? data.league.leagueName : null,
+            message: data.message
+        });
+
+        if (data.rounds && data.rounds.length > 0) {
+            console.log('[ROUNDS-LOADING] Detailed rounds data:');
+            data.rounds.forEach((round, index) => {
+                console.log(`[ROUNDS-LOADING]   Round ${index + 1}:`, {
+                    number: round.number,
+                    dateTime: round.dateTime,
+                    matchesCount: round.matches ? round.matches.length : 0
+                });
+                if (round.matches && round.matches.length > 0) {
+                    round.matches.forEach((match, matchIndex) => {
+                        console.log(`[ROUNDS-LOADING]     Match ${matchIndex + 1}:`, {
+                            homeTeam: match.homeTeam,
+                            guestTeam: match.guestTeam,
+                            dateTime: match.dateTime,
+                            address: match.address
+                        });
+                    });
+                }
+            });
+        }
+
+        currentRounds = data.rounds || [];
         currentLeague = data.league;
-        
+        console.log('[ROUNDS-LOADING] Updated currentRounds:', currentRounds.length, 'rounds');
+        console.log('[ROUNDS-LOADING] Updated currentLeague:', currentLeague);
+
         // Extract director info and contact person from league
         directorInfo = `${currentLeague.directorFirstName} ${currentLeague.directorSurname}`;
         if (currentLeague.directorEmail) {
             directorInfo += ` (${currentLeague.directorEmail})`;
         }
         contactPerson = '';
+        console.log('[ROUNDS-LOADING] Director info:', directorInfo);
+        console.log('[ROUNDS-LOADING] Contact person:', contactPerson);
+
+        console.log('[ROUNDS-LOADING] Calling displayRoundsEditor()');
         displayRoundsEditor();
-        
+        console.log('[ROUNDS-LOADING] ✓ displayRoundsEditor() completed');
+
+        console.log('[ROUNDS-LOADING] ===== END loadRoundsData (success) =====');
         return data;
     } catch (error) {
-        console.error('Error loading rounds data:', error);
+        console.error('[ROUNDS-LOADING] ===== EXCEPTION in loadRoundsData =====');
+        console.error('[ROUNDS-LOADING] ✗ Error loading rounds data:', error);
+        console.error('[ROUNDS-LOADING] Error name:', error.name);
+        console.error('[ROUNDS-LOADING] Error message:', error.message);
+        console.error('[ROUNDS-LOADING] Error stack:', error.stack);
         showStatus('Error loading rounds data: ' + error.message, 'error');
+        console.log('[ROUNDS-LOADING] ===== END loadRoundsData (error) =====');
         throw error;
     }
 }
