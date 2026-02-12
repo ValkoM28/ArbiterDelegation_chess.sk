@@ -285,7 +285,7 @@ func ParseChessResultsExcelToRounds(filePath string) ([]data.Round, error) {
 
 		// Check if this is the column header row (skip it)
 		if len(row) >= 3 && row[0] == "No." && row[1] == "Team" && row[2] == "Team" {
-			//fmt.Printf("[PARSE-EXCEL] Row %d: Skipping column header row\n", rowIndex+1)
+			fmt.Printf("[PARSE-EXCEL] Row %d: Skipping column header row\n", rowIndex+1)
 			continue
 		}
 
@@ -401,7 +401,7 @@ func ParseExcelForLeagueToRounds(league *data.League) ([]data.Round, error) {
 	cleanupStartTime := time.Now()
 	if err := CleanupTempFile(filePath); err != nil {
 		cleanupDuration := time.Since(cleanupStartTime)
-		//fmt.Printf("[PARSE-LEAGUE-EXCEL] ⚠ Warning: failed to cleanup Excel file %s (took %v): %v\n", filePath, cleanupDuration, err)
+		fmt.Printf("[PARSE-LEAGUE-EXCEL] ⚠ Warning: failed to cleanup Excel file %s (took %v): %v\n", filePath, cleanupDuration, err)
 	} else {
 		cleanupDuration := time.Since(cleanupStartTime)
 		fmt.Printf("[PARSE-LEAGUE-EXCEL] ✓ Excel file cleaned up successfully in %v\n", cleanupDuration)
