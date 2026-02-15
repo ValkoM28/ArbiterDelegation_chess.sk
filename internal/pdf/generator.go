@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
+	"eu.michalvalko.chess_arbiter_delegation_generator/internal/logger"
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
@@ -40,8 +41,7 @@ func FillForm(pdfPath string, data map[string]string) (string, error) {
 	// Generate unique output filename with UUID
 	outputPath := fmt.Sprintf("assets/results/%s_%s_%s.pdf", data["text_1nzhs"], data["text_2qqiu"], uuid.New().String()[:8])
 
-	// DEBUG: Log the generated filename
-	fmt.Printf("DEBUG GENERATOR: Generated filename: %s\n", outputPath)
+	logger.Debug("Generated PDF filename: %s", outputPath)
 
 	// Ensure the results directory exists
 	resultsDir := "assets/results"
@@ -92,8 +92,9 @@ func GeneratePDFsFromDelegateArbiters(pdfDataArray []data.PDFData, templatePath 
 		}
 
 		generatedFiles = append(generatedFiles, filePath)
-		fmt.Printf("Generated PDF: %s\n", filePath)
+		logger.Debug("Generated PDF %d/%d: %s", i+1, len(pdfDataArray), filePath)
 	}
 
+	logger.Info("Generated %d PDF files", len(generatedFiles))
 	return generatedFiles, nil
 }

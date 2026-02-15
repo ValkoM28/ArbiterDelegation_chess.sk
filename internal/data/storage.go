@@ -51,14 +51,28 @@ func (sd *SessionData) Set(key string, value interface{}) {
 // This method makes an HTTP GET request to the provided URL and stores the response.
 // Returns an error if the HTTP request fails or if the response cannot be processed.
 func (sd *SessionData) LoadData(key string, url string) error {
+	fmt.Println("========== START SessionData.LoadData ==========")
+	fmt.Printf("[LOAD-DATA] Key: %s\n", key)
+	fmt.Printf("[LOAD-DATA] URL: %s\n", url)
+
 	// This will call our HTTP client function
+	fmt.Println("[LOAD-DATA] Calling fetchFromAPI()")
+	fetchStartTime := time.Now()
 	data, err := fetchFromAPI(url)
+	fetchDuration := time.Since(fetchStartTime)
+
 	if err != nil {
+		fmt.Printf("[LOAD-DATA] ✗ fetchFromAPI failed (took %v): %v\n", fetchDuration, err)
 		return err
 	}
+	fmt.Printf("[LOAD-DATA] ✓ fetchFromAPI succeeded in %v\n", fetchDuration)
 
 	// Store the data
+	fmt.Printf("[LOAD-DATA] Storing data with key '%s'\n", key)
 	sd.Set(key, data)
+	fmt.Printf("[LOAD-DATA] ✓ Data stored successfully\n")
+
+	fmt.Println("========== END SessionData.LoadData (success) ==========")
 	return nil
 }
 
@@ -87,39 +101,85 @@ func (sd *SessionData) HasData(key string) bool {
 // The response is expected to be JSON and will be wrapped in a map with a "data" key.
 // Returns an error if the request fails, the response status is not OK, or JSON parsing fails.
 func fetchFromAPI(url string) (map[string]interface{}, error) {
+	fmt.Println("========== START fetchFromAPI ==========")
+	fmt.Printf("[FETCH-API] Target URL: %s\n", url)
+
 	// Create an HTTP client with a timeout
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
+	fmt.Println("[FETCH-API] HTTP client created with 30s timeout")
 
 	// Make the HTTP GET request
+	fmt.Println("[FETCH-API] Making HTTP GET request...")
+	requestStartTime := time.Now()
 	resp, err := client.Get(url)
+	requestDuration := time.Since(requestStartTime)
+
 	if err != nil {
+		fmt.Printf("[FETCH-API] ✗ HTTP request failed (took %v): %v\n", requestDuration, err)
 		return nil, fmt.Errorf("failed to make request: %v", err)
 	}
 	defer resp.Body.Close()
+	fmt.Printf("[FETCH-API] ✓ HTTP request completed in %v\n", requestDuration)
+	fmt.Printf("[FETCH-API] Response status: %d %s\n", resp.StatusCode, resp.Status)
+	fmt.Printf("[FETCH-API] Response headers: %v\n", resp.Header)
 
 	// Check if the response was successful
 	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("[FETCH-API] ✗ API returned non-OK status: %d\n", resp.StatusCode)
 		return nil, fmt.Errorf("API returned status code: %d", resp.StatusCode)
 	}
+	fmt.Println("[FETCH-API] ✓ Response status is OK (200)")
 
 	// Read the response body
+	fmt.Println("[FETCH-API] Reading response body...")
+	readStartTime := time.Now()
 	body, err := io.ReadAll(resp.Body)
+	readDuration := time.Since(readStartTime)
+
 	if err != nil {
+		fmt.Printf("[FETCH-API] ✗ Failed to read response body (took %v): %v\n", readDuration, err)
 		return nil, fmt.Errorf("failed to read response: %v", err)
 	}
+	fmt.Printf("[FETCH-API] ✓ Response body read successfully in %v\n", readDuration)
+	fmt.Printf("[FETCH-API] Response body size: %d bytes\n", len(body))
+
+	// Show a preview of the response body (first 500 characters)
+	bodyPreview := string(body)
+	if len(bodyPreview) > 500 {
+		bodyPreview = bodyPreview[:500] + "... (truncated)"
+	}
+	fmt.Printf("[FETCH-API] Response body preview: %s\n", bodyPreview)
 
 	// Parse the JSON response - it could be an array or an object
+	fmt.Println("[FETCH-API] Parsing JSON response...")
+	parseStartTime := time.Now()
 	var result interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Printf("[FETCH-API] ✗ Failed to parse JSON (took %v): %v\n", time.Since(parseStartTime), err)
+		fmt.Printf("[FETCH-API] Body that failed to parse: %s\n", string(body))
 		return nil, fmt.Errorf("failed to parse JSON: %v", err)
 	}
+	parseDuration := time.Since(parseStartTime)
+	fmt.Printf("[FETCH-API] ✓ JSON parsed successfully in %v\n", parseDuration)
+	fmt.Printf("[FETCH-API] Parsed data type: %T\n", result)
 
 	// Convert to map format for consistency
 	resultMap := make(map[string]interface{})
 	resultMap["data"] = result
 
+	// Log statistics about the data
+	switch v := result.(type) {
+	case []interface{}:
+		fmt.Printf("[FETCH-API] Result is an array with %d items\n", len(v))
+	case map[string]interface{}:
+		fmt.Printf("[FETCH-API] Result is an object with %d keys\n", len(v))
+	default:
+		fmt.Printf("[FETCH-API] Result is of type: %T\n", result)
+	}
+
+	fmt.Println("========== END fetchFromAPI (success) ==========")
 	return resultMap, nil
 }
 

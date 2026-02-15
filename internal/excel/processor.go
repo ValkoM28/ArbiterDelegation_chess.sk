@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
+	"eu.michalvalko.chess_arbiter_delegation_generator/internal/logger"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -24,9 +25,12 @@ import (
 func DownloadChessResultsExcel(tournamentID string) (string, error) {
 	// Construct the URL for the Excel download
 	url := fmt.Sprintf("https://chess-results.com/tnr%s.aspx?lan=1&zeilen=0&art=2&prt=4&excel=2010", tournamentID)
+
+	logger.Debug("Downloading Excel for tournament ID: %s from %s", tournamentID, url)
+
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 60 * time.Second, // Longer timeout for file download
+		Timeout: 60 * time.Second,
 	}
 
 	// Make the HTTP GET request
@@ -59,11 +63,12 @@ func DownloadChessResultsExcel(tournamentID string) (string, error) {
 	defer file.Close()
 
 	// Copy the response body to the file
-	_, err = io.Copy(file, resp.Body)
+	bytesWritten, err := io.Copy(file, resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to write Excel file: %v", err)
 	}
 
+	logger.Debug("Excel file downloaded: %s (%d bytes)", filePath, bytesWritten)
 	return filePath, nil
 }
 
@@ -92,11 +97,15 @@ func ExtractTournamentIDFromLeague(league *data.League) (string, error) {
 		return "", fmt.Errorf("could not extract tournament ID from link: %s", league.ChessResultsLink)
 	}
 
-	return matches[1], nil
+	tournamentID := matches[1]
+	logger.Debug("Extracted tournament ID %s from league '%s'", tournamentID, league.LeagueName)
+	return tournamentID, nil
 }
 
 // DownloadExcelForLeague downloads Excel file for a given league
 func DownloadExcelForLeague(league *data.League) (string, error) {
+	logger.Debug("Downloading Excel for league '%s' (ID: %d)", league.LeagueName, league.LeagueId)
+
 	// Extract tournament ID from league's ChessResultsLink
 	tournamentID, err := ExtractTournamentIDFromLeague(league)
 	if err != nil {
@@ -109,6 +118,7 @@ func DownloadExcelForLeague(league *data.League) (string, error) {
 		return "", fmt.Errorf("failed to download Excel file: %v", err)
 	}
 
+	logger.Debug("Excel file downloaded for league '%s': %s", league.LeagueName, filePath)
 	return filePath, nil
 }
 
@@ -122,6 +132,7 @@ func ParseChessResultsExcelToRounds(filePath string) ([]data.Round, error) {
 	// Open the Excel file
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
+		logger.Error("Failed to open Excel file %s: %v", filePath, err)
 		return nil, fmt.Errorf("failed to open Excel file: %v", err)
 	}
 	defer f.Close()
@@ -129,12 +140,14 @@ func ParseChessResultsExcelToRounds(filePath string) ([]data.Round, error) {
 	// Get the first sheet name
 	sheetName := f.GetSheetName(0)
 	if sheetName == "" {
+		logger.Error("No sheets found in Excel file: %s", filePath)
 		return nil, fmt.Errorf("no sheets found in Excel file")
 	}
 
 	// Get all rows from the sheet
 	rows, err := f.GetRows(sheetName)
 	if err != nil {
+		logger.Error("Failed to get rows from sheet %s: %v", sheetName, err)
 		return nil, fmt.Errorf("failed to get rows from sheet: %v", err)
 	}
 
@@ -146,43 +159,86 @@ func ParseChessResultsExcelToRounds(filePath string) ([]data.Round, error) {
 			continue
 		}
 
-		// Check if this is a round header (e.g., "Round 1 on 2025/10/25 at 11:00")
-		if strings.HasPrefix(row[0], "Round ") && strings.Contains(row[0], " on ") {
+		// Check if this is a round header
+		// Format 1: "Round 1" (simple format - date/time from match rows)
+		// Format 2: "Round 1 on 2025/10/25 at 11:00" (date/time embedded in header)
+		if len(row) == 1 && strings.HasPrefix(row[0], "Round ") {
 			// If we have a previous round, add it to the rounds slice
 			if currentRound != nil {
 				rounds = append(rounds, *currentRound)
 			}
 
-			// Extract round number, date and time from round header
-			re := regexp.MustCompile(`Round (\d+) on (\d{4}/\d{2}/\d{2}) at (\d{2}:\d{2})`)
-			matches := re.FindStringSubmatch(row[0])
-			if len(matches) >= 4 {
-				roundNumber, _ := strconv.Atoi(matches[1])
-				dateTime := fmt.Sprintf("%s %s", matches[2], matches[3])
+			// Try Format 2 first: "Round N on YYYY/MM/DD at HH:MM"
+			reWithDate := regexp.MustCompile(`Round (\d+) on (\d{4}/\d{2}/\d{2}) at (\d{2}:\d{2})`)
+			matchesWithDate := reWithDate.FindStringSubmatch(row[0])
+
+			if len(matchesWithDate) >= 4 {
+				// Format 2: Extract round number and date/time from header
+				roundNumber, _ := strconv.Atoi(matchesWithDate[1])
+				dateTime := fmt.Sprintf("%s %s", matchesWithDate[2], matchesWithDate[3])
 
 				currentRound = &data.Round{
 					Number:   roundNumber,
 					DateTime: dateTime,
 					Matches:  []data.MatchInfo{},
 				}
+			} else {
+				// Format 1: Extract only round number, date/time will come from match rows
+				reSimple := regexp.MustCompile(`Round (\d+)`)
+				matchesSimple := reSimple.FindStringSubmatch(row[0])
+
+				if len(matchesSimple) >= 2 {
+					roundNumber, _ := strconv.Atoi(matchesSimple[1])
+
+					currentRound = &data.Round{
+						Number:   roundNumber,
+						DateTime: "", // Will be set from first match
+						Matches:  []data.MatchInfo{},
+					}
+				}
 			}
 			continue
 		}
 
-		// Check if this is a match row (starts with a number and has two team names)
-		if len(row) >= 3 && isNumeric(row[0]) && row[1] != "" && row[2] != "" {
-			// Skip the header row "No.,Team,Team,Res.,:,Res."
-			if row[1] == "Team" && row[2] == "Team" {
-				continue
-			}
+		// Check if this is the column header row (skip it)
+		if len(row) >= 3 && row[0] == "No." && row[1] == "Team" && row[2] == "Team" {
+			continue
+		}
 
+		// Check if this is a match row
+		// Format: [No.] [HomeTeam] [GuestTeam] [Res1] [:] [Res2] [Date] [Time] [Location]
+		// Need at least 3 columns (some formats may not have all 9 columns)
+		if len(row) >= 3 && isNumeric(row[0]) && row[1] != "" && row[2] != "" {
 			// Only add match if we have a current round
 			if currentRound != nil {
+				var dateTime string
+				var address string
+
+				// Check if we have date/time in columns (Format 1)
+				if len(row) >= 9 {
+					// Extract date and time from columns 6 and 7
+					date := strings.TrimSpace(row[6])    // Format: YYYY/MM/DD
+					timeStr := strings.TrimSpace(row[7]) // Format: HH:MM
+					address = strings.TrimSpace(row[8])  // Location
+
+					// Combine date and time
+					dateTime = fmt.Sprintf("%s %s", date, timeStr)
+
+					// Set round's DateTime from first match if not set (Format 1)
+					if currentRound.DateTime == "" {
+						currentRound.DateTime = dateTime
+					}
+				} else {
+					// Use round's DateTime (Format 2 - date/time from header)
+					dateTime = currentRound.DateTime
+					address = "" // Address not available in this format
+				}
+
 				match := data.MatchInfo{
 					HomeTeam:  strings.TrimSpace(row[1]),
 					GuestTeam: strings.TrimSpace(row[2]),
-					DateTime:  currentRound.DateTime,
-					Address:   "", // Address not available in this Excel format
+					DateTime:  dateTime,
+					Address:   address,
 				}
 
 				currentRound.Matches = append(currentRound.Matches, match)
@@ -195,6 +251,7 @@ func ParseChessResultsExcelToRounds(filePath string) ([]data.Round, error) {
 		rounds = append(rounds, *currentRound)
 	}
 
+	logger.Debug("Parsed %d rounds from Excel file %s", len(rounds), filePath)
 	return rounds, nil
 }
 
@@ -216,7 +273,9 @@ func ParseExcelForLeagueToRounds(league *data.League) ([]data.Round, error) {
 
 	// Clean up Excel file immediately after parsing
 	if err := CleanupTempFile(filePath); err != nil {
-		fmt.Printf("Warning: failed to cleanup Excel file %s: %v\n", filePath, err)
+		logger.Error("Failed to cleanup Excel file %s: %v", filePath, err)
 	}
+
+	logger.Info("Parsed %d rounds from Excel for league '%s'", len(rounds), league.LeagueName)
 	return rounds, nil
 }

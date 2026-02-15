@@ -169,6 +169,27 @@ The application follows a clean, modular architecture with clear separation of c
 - `ExtractTournamentIDFromLeague()`: Extracts tournament ID from league data
 - `CleanupTempFile()`: Removes temporary Excel files
 
+### `/internal/logger`
+**Purpose**: Centralized logging system with file-based output
+
+**Files**:
+- `logger.go`: Logger initialization and logging functions
+
+**Key Functions**:
+- `Init()`: Initializes the logging system with file output
+- `Info()`: Logs informational messages
+- `Error()`: Logs error messages
+- `Debug()`: Logs debug messages (only if debug mode enabled)
+- `CleanOldLogs()`: Removes old log files based on retention policy
+- `Close()`: Closes the log file handler
+
+**Features**:
+- Daily log rotation (one file per day)
+- Automatic cleanup of logs older than 30 days
+- Multi-level logging (INFO, ERROR, DEBUG)
+- Output to both file and console for important messages
+- Debug logs only to file to reduce console noise
+
 ### `/internal/pdf`
 **Purpose**: PDF generation, form filling, and file management
 
@@ -263,6 +284,48 @@ type PDFData struct {
 ### Environment Variables
 - `PORT`: Server port (default: 8080)
 - `GIN_MODE`: Gin mode (debug/release)
+- `DEBUG`: Enable debug logging (default: false)
+  - Set to `true` to enable verbose debug logs
+  - Debug logs are written to file only, not to console
+
+### Logging System
+
+The application uses a centralized file-based logging system located in `internal/logger`.
+
+#### Log Levels
+- **INFO**: Important informational messages (operations, successful actions)
+- **ERROR**: Error messages (failures, exceptions)
+- **DEBUG**: Detailed debugging information (only enabled when DEBUG=true)
+
+#### Log Files
+- **Location**: `logs/app_YYYY-MM-DD.log`
+- **Format**: Timestamp, level, filename:line, message
+- **Rotation**: Daily rotation based on date
+- **Retention**: Automatic cleanup of logs older than 30 days
+- **Output**: INFO and ERROR to both file and console; DEBUG to file only
+
+#### Usage in Code
+```go
+import "eu.michalvalko.chess_arbiter_delegation_generator/internal/logger"
+
+// Log informational messages
+logger.Info("Server started on port %d", 8080)
+
+// Log errors
+logger.Error("Failed to connect to database: %v", err)
+
+// Log debug messages (only if DEBUG=true)
+logger.Debug("Request data: %+v", requestData)
+```
+
+#### Example Log Output
+```
+INFO: 2026/02/12 10:15:23 main.go:20: Starting Chess Arbiter Delegation Generator
+INFO: 2026/02/12 10:15:23 main.go:35: Server starting on http://localhost:8080
+INFO: 2026/02/12 10:15:45 handlers.go:45: Loading external data for season 2024
+INFO: 2026/02/12 10:15:46 handlers.go:75: Loaded arbiters: 150 total -> 120 active
+ERROR: 2026/02/12 10:16:10 handlers.go:95: Failed to load leagues for season 2024: connection timeout
+```
 
 ### Dependencies
 - **Gin**: HTTP web framework

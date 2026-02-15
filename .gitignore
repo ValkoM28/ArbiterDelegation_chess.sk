@@ -1,1 +1,4 @@
 assets/*
+logs/*
+
+.cloc

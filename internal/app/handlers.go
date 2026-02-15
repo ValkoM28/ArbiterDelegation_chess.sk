@@ -9,6 +9,7 @@ import (
 
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/data"
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/excel"
+	"eu.michalvalko.chess_arbiter_delegation_generator/internal/logger"
 	"eu.michalvalko.chess_arbiter_delegation_generator/internal/pdf"
 	"github.com/gin-gonic/gin"
 )
@@ -35,30 +36,35 @@ func (app *App) RegisterRoutes(r *gin.Engine) {
 // The function loads data from chess.sk API for both arbiters and leagues.
 // Returns a JSON response indicating success and whether data was loaded.
 func (app *App) loadExternalData(c *gin.Context) {
-	fmt.Println("DEBUG: Load external data endpoint called")
-
 	// Parse request body to get season year
 	var requestBody struct {
 		SeasonStartYear string `json:"seasonStartYear"`
 	}
+
 	if err := c.BindJSON(&requestBody); err != nil {
+		logger.Error("Failed to parse loadExternalData request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
+	logger.Info("Loading external data for season %s", requestBody.SeasonStartYear)
+
 	// Load arbiters data
-	err := app.LoadArbiters()
-	if err != nil {
+	if err := app.LoadArbiters(); err != nil {
+		logger.Error("Failed to load arbiters: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load arbiters: " + err.Error()})
 		return
 	}
 
 	// Load leagues data
-	err = app.LoadLeagues(requestBody.SeasonStartYear)
-	if err != nil {
+	if err := app.LoadLeagues(requestBody.SeasonStartYear); err != nil {
+		logger.Error("Failed to load leagues for season %s: %v", requestBody.SeasonStartYear, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load leagues: " + err.Error()})
 		return
 	}
+
+	logger.Info("External data loaded successfully - Arbiters: %v, Leagues: %v",
+		app.storage.HasData("arbiters"), app.storage.HasData("leagues"))
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":         "External data loaded successfully",
@@ -221,14 +227,19 @@ func (app *App) getRounds(c *gin.Context) {
 	var requestBody struct {
 		LeagueID int `json:"leagueId"`
 	}
+
 	if err := c.BindJSON(&requestBody); err != nil {
+		logger.Error("Failed to parse getRounds request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
+	logger.Info("Fetching rounds for league ID: %d", requestBody.LeagueID)
+
 	// Get league by ID
 	league, err := app.storage.GetLeagueByID(requestBody.LeagueID)
 	if err != nil {
+		logger.Error("League not found (ID: %d): %v", requestBody.LeagueID, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": "League not found: " + err.Error()})
 		return
 	}
@@ -236,9 +247,12 @@ func (app *App) getRounds(c *gin.Context) {
 	// Parse Excel file to get rounds
 	rounds, err := excel.ParseExcelForLeagueToRounds(league)
 	if err != nil {
+		logger.Error("Failed to parse rounds for league '%s': %v", league.LeagueName, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse rounds: " + err.Error()})
 		return
 	}
+
+	logger.Info("Successfully loaded %d rounds for league '%s'", len(rounds), league.LeagueName)
 
 	// Store rounds in session data for later editing
 	app.storage.Set("current_rounds", rounds)
@@ -255,27 +269,18 @@ func (app *App) getRounds(c *gin.Context) {
 func (app *App) delegateArbiters(c *gin.Context) {
 	var requestBody []data.PDFData
 	if err := c.BindJSON(&requestBody); err != nil {
+		logger.Error("Failed to parse delegateArbiters request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// DEBUG: Log received data
-	fmt.Printf("DEBUG: Received %d PDF data items\n", len(requestBody))
-	for i, pdfData := range requestBody {
-		fmt.Printf("DEBUG: PDF Data %d:\n", i)
-		fmt.Printf("  Arbiter: FirstName='%s', LastName='%s', PlayerID='%s'\n",
-			pdfData.Arbiter.FirstName, pdfData.Arbiter.LastName, pdfData.Arbiter.PlayerID)
-		fmt.Printf("  League: Name='%s', Year='%s'\n",
-			pdfData.League.Name, pdfData.League.Year)
-		fmt.Printf("  Match: HomeTeam='%s', GuestTeam='%s', DateTime='%s', Address='%s'\n",
-			pdfData.Match.HomeTeam, pdfData.Match.GuestTeam, pdfData.Match.DateTime, pdfData.Match.Address)
-		fmt.Printf("  Director: Contact='%s'\n", pdfData.Director.Contact)
-		fmt.Printf("  ContactPerson: '%s'\n", pdfData.ContactPerson)
-	}
+	logger.Info("Generating PDFs for %d arbiters", len(requestBody))
+	logger.Debug("PDF generation data: %+v", requestBody)
 
 	// Generate PDFs
 	generatedFiles, err := pdf.GeneratePDFsFromDelegateArbiters(requestBody, "templates/delegacny_list_ligy.pdf")
 	if err != nil {
+		logger.Error("Failed to generate PDFs: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate PDFs: " + err.Error()})
 		return
 	}
@@ -284,6 +289,7 @@ func (app *App) delegateArbiters(c *gin.Context) {
 	zipName := fmt.Sprintf("delegacne_listy_%d.zip", time.Now().Unix())
 	zipPath, err := pdf.CreateZipFromFiles(generatedFiles, zipName)
 	if err != nil {
+		logger.Error("Failed to create zip file: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create zip file: " + err.Error()})
 		return
 	}
@@ -291,9 +297,11 @@ func (app *App) delegateArbiters(c *gin.Context) {
 	// Clean up individual PDF files after creating zip
 	for _, file := range generatedFiles {
 		if err := os.Remove(file); err != nil {
-			fmt.Printf("Warning: failed to remove temporary PDF file %s: %v\n", file, err)
+			logger.Error("Failed to remove temporary PDF file %s: %v", file, err)
 		}
 	}
+
+	logger.Info("Successfully generated delegation package: %s", zipName)
 
 	// Return the zip file for download
 	c.Header("Content-Type", "application/zip")
@@ -376,21 +384,35 @@ func (app *App) LoadArbiters() error {
 		"status": "active", // Currently ignored by API, but kept for when it gets fixed
 	})
 
-	err := app.storage.LoadData("arbiters", arbitersURL)
-	if err != nil {
+	logger.Debug("Loading arbiters from: %s", arbitersURL)
+
+	if err := app.storage.LoadData("arbiters", arbitersURL); err != nil {
 		return fmt.Errorf("failed to load arbiters: %v", err)
 	}
 
 	// TEMPORARY: Client-side filtering for active arbiters until chess.sk API supports status=active
 	arbitersData, exists := app.storage.Get("arbiters")
-	if exists {
-		filteredArbiters, err := filterActiveArbiters(arbitersData)
-		if err != nil {
-			return fmt.Errorf("failed to filter arbiters: %v", err)
-		}
-		app.storage.Set("arbiters", filteredArbiters)
+	if !exists {
+		return fmt.Errorf("arbiters data not found in storage after loading")
 	}
 
+	filteredArbiters, err := filterActiveArbiters(arbitersData)
+	if err != nil {
+		return fmt.Errorf("failed to filter arbiters: %v", err)
+	}
+
+	// Log filtering statistics
+	if dataMap, ok := arbitersData.(map[string]interface{}); ok {
+		if dataArray, ok := dataMap["data"].([]interface{}); ok {
+			originalCount := len(dataArray)
+			if filteredMap, ok := filteredArbiters["data"].([]interface{}); ok {
+				filteredCount := len(filteredMap)
+				logger.Info("Loaded arbiters: %d total -> %d active", originalCount, filteredCount)
+			}
+		}
+	}
+
+	app.storage.Set("arbiters", filteredArbiters)
 	return nil
 }
 
@@ -401,9 +423,21 @@ func (app *App) LoadArbiters() error {
 func (app *App) LoadLeagues(seasonStartYear string) error {
 	// Load leagues data from your real API with season parameter
 	leaguesURL := fmt.Sprintf("https://chess.sk/api/leagues.php/v1/leagues?saisonStartYear=%s", seasonStartYear)
-	err := app.storage.LoadData("leagues", leaguesURL)
-	if err != nil {
+
+	logger.Debug("Loading leagues from: %s", leaguesURL)
+
+	if err := app.storage.LoadData("leagues", leaguesURL); err != nil {
 		return fmt.Errorf("failed to load leagues: %v", err)
+	}
+
+	// Log statistics about loaded leagues
+	leaguesData, exists := app.storage.Get("leagues")
+	if exists {
+		if dataMap, ok := leaguesData.(map[string]interface{}); ok {
+			if dataArray, ok := dataMap["data"].([]interface{}); ok {
+				logger.Info("Loaded %d leagues for season %s", len(dataArray), seasonStartYear)
+			}
+		}
 	}
 
 	return nil
