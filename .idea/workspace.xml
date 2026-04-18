@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d14dd939-9e47-488e-9bdd-3ac1b70ae114" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/assets/js/rounds-management.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/assets/js/rounds-management.js" afterDir="false" />
     </list>
@@ -43,7 +42,7 @@
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "feature/10-add-an-option-to-manual-set-the-names-and-ids-of-the-arbiters-…ation",
+    "git-widget-placeholder": "feature/11-add-an-option-to-only-create-select-delegation-lists-so-its-no…anges",
     "go.sdk.automatically.set": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "/home/michal/workspaces/projects/ArbiterDelegation_chess.sk",
