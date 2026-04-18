@@ -4,6 +4,9 @@ let currentLeague = null;
 let directorInfo = '';
 let contactPerson = '';
 
+const EYE_OPEN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_CLOSED_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
 // Load rounds data for a specific league
 async function loadRoundsData(leagueId) {
     console.log('[ROUNDS-LOADING] ===== START loadRoundsData =====');
@@ -152,18 +155,32 @@ function displayRoundsEditor() {
 
     currentRounds.forEach((round, roundIndex) => {
         html += `
-            <div class="border border-gray-200 rounded-lg p-4">
+            <div id="round_${roundIndex}" class="border border-gray-200 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-4">
                     <h4 class="text-lg font-medium text-gray-700">Kolo č. ${round.number}</h4>
+                    <button type="button"
+                        id="round_${roundIndex}_visibility_btn"
+                        onclick="toggleRoundVisibility(${roundIndex})"
+                        class="text-gray-400 hover:text-gray-600"
+                        title="Skryť/zobraziť kolo"
+                    >${EYE_OPEN_SVG}</button>
                 </div>
-                
-                <div class="space-y-3">
+
+                <div id="round_${roundIndex}_matches_container" class="space-y-3">
         `;
 
         // Add each match in the round
         round.matches.forEach((match, matchIndex) => {
             html += `
-                <div class="p-3 bg-gray-50 rounded border">
+                <div id="round_${roundIndex}_match_${matchIndex}" class="p-3 bg-gray-50 rounded border">
+                    <div class="flex justify-end mb-1">
+                        <button type="button"
+                            id="round_${roundIndex}_match_${matchIndex}_visibility_btn"
+                            onclick="toggleMatchVisibility(${roundIndex}, ${matchIndex})"
+                            class="text-gray-400 hover:text-gray-600"
+                            title="Vylúčiť/zahrnúť zápas"
+                        >${EYE_OPEN_SVG}</button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Domáci</label>
@@ -244,20 +261,20 @@ function displayRoundsEditor() {
                         <div id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_section" class="hidden">
                             <div class="grid grid-cols-3 gap-2">
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Meno</label>
+                                    <label class="block text-xs text-gray-500 mb-1">Priezvisko</label>
                                     <input
                                         type="text"
                                         id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_firstname"
-                                        placeholder="Meno"
+                                        placeholder="Priezvisko"
                                         class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Priezvisko</label>
+                                    <label class="block text-xs text-gray-500 mb-1">Meno</label>
                                     <input
                                         type="text"
                                         id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_lastname"
-                                        placeholder="Priezvisko"
+                                        placeholder="Meno"
                                         class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     />
                                 </div>
@@ -383,6 +400,41 @@ function showStatus(message, type = 'info') {
 }
 
 
+
+// Toggle visibility of an entire round (collapses its matches)
+function toggleRoundVisibility(roundIndex) {
+    const roundEl = document.getElementById(`round_${roundIndex}`);
+    const matchesContainer = document.getElementById(`round_${roundIndex}_matches_container`);
+    const btn = document.getElementById(`round_${roundIndex}_visibility_btn`);
+
+    const isExcluded = roundEl.dataset.excluded === 'true';
+    if (isExcluded) {
+        roundEl.dataset.excluded = 'false';
+        matchesContainer.classList.remove('hidden');
+        btn.innerHTML = EYE_OPEN_SVG;
+    } else {
+        roundEl.dataset.excluded = 'true';
+        matchesContainer.classList.add('hidden');
+        btn.innerHTML = EYE_CLOSED_SVG;
+    }
+}
+
+// Toggle visibility of a single match (dims it, keeps it visible)
+function toggleMatchVisibility(roundIndex, matchIndex) {
+    const matchEl = document.getElementById(`round_${roundIndex}_match_${matchIndex}`);
+    const btn = document.getElementById(`round_${roundIndex}_match_${matchIndex}_visibility_btn`);
+
+    const isExcluded = matchEl.dataset.excluded === 'true';
+    if (isExcluded) {
+        matchEl.dataset.excluded = 'false';
+        matchEl.classList.remove('opacity-40');
+        btn.innerHTML = EYE_OPEN_SVG;
+    } else {
+        matchEl.dataset.excluded = 'true';
+        matchEl.classList.add('opacity-40');
+        btn.innerHTML = EYE_CLOSED_SVG;
+    }
+}
 
 // Toggle between search and manual arbiter entry for a match
 function toggleManualArbiter(roundIndex, matchIndex) {
@@ -581,7 +633,12 @@ function preparePDFDataArray() {
     
     // Create PDFData for each match
     currentRounds.forEach((round, roundIndex) => {
+        const roundEl = document.getElementById(`round_${roundIndex}`);
+        if (roundEl?.dataset.excluded === 'true') return;
+
         round.matches.forEach((match, matchIndex) => {
+            const matchEl = document.getElementById(`round_${roundIndex}_match_${matchIndex}`);
+            if (matchEl?.dataset.excluded === 'true') return;
             // Get current form data (including any user edits)
             const homeTeam = document.getElementById(`round_${roundIndex}_match_${matchIndex}_home`)?.value || match.homeTeam;
             const guestTeam = document.getElementById(`round_${roundIndex}_match_${matchIndex}_guest`)?.value || match.guestTeam;
