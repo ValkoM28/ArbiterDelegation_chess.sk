@@ -206,26 +206,71 @@ function displayRoundsEditor() {
                     
                     <!-- Match Arbiter Selection -->
                     <div class="mt-3 p-2 bg-blue-50 rounded">
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Delegovaný rozhodca:</label>
-                        <div class="relative">
-                            <input 
-                                type="text" 
-                                id="round_${roundIndex}_match_${matchIndex}_arbiter_search" 
-                                placeholder="Hľadaj podľa priezviska..."
-                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                oninput="filterArbiters(${roundIndex}, ${matchIndex})"
-                                onfocus="showArbiterDropdown(${roundIndex}, ${matchIndex})"
-                                onblur="hideArbiterDropdown(${roundIndex}, ${matchIndex})"
-                            />
-                            <div 
-                                id="round_${roundIndex}_match_${matchIndex}_arbiter_dropdown" 
-                                class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"
-                            >
-                                <!-- Arbiter options will be populated here -->
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-medium text-gray-600">Delegovaný rozhodca:</label>
+                            <button
+                                type="button"
+                                id="round_${roundIndex}_match_${matchIndex}_arbiter_toggle"
+                                onclick="toggleManualArbiter(${roundIndex}, ${matchIndex})"
+                                class="text-xs text-blue-600 hover:text-blue-800 underline"
+                            >Zadaj manuálne</button>
+                        </div>
+
+                        <!-- Search mode (default) -->
+                        <div id="round_${roundIndex}_match_${matchIndex}_arbiter_search_section">
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="round_${roundIndex}_match_${matchIndex}_arbiter_search"
+                                    placeholder="Hľadaj podľa priezviska..."
+                                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    oninput="filterArbiters(${roundIndex}, ${matchIndex})"
+                                    onfocus="showArbiterDropdown(${roundIndex}, ${matchIndex})"
+                                    onblur="hideArbiterDropdown(${roundIndex}, ${matchIndex})"
+                                />
+                                <div
+                                    id="round_${roundIndex}_match_${matchIndex}_arbiter_dropdown"
+                                    class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-60 overflow-y-auto"
+                                >
+                                    <!-- Arbiter options will be populated here -->
+                                </div>
+                            </div>
+                            <div id="round_${roundIndex}_match_${matchIndex}_arbiter_details" class="mt-1 text-xs text-gray-600 hidden">
+                                <!-- Arbiter details will be shown here -->
                             </div>
                         </div>
-                        <div id="round_${roundIndex}_match_${matchIndex}_arbiter_details" class="mt-1 text-xs text-gray-600 hidden">
-                            <!-- Arbiter details will be shown here -->
+
+                        <!-- Manual mode (hidden by default) -->
+                        <div id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_section" class="hidden">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Meno</label>
+                                    <input
+                                        type="text"
+                                        id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_firstname"
+                                        placeholder="Meno"
+                                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Priezvisko</label>
+                                    <input
+                                        type="text"
+                                        id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_lastname"
+                                        placeholder="Priezvisko"
+                                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">ID rozhodcu</label>
+                                    <input
+                                        type="text"
+                                        id="round_${roundIndex}_match_${matchIndex}_arbiter_manual_id"
+                                        placeholder="ID"
+                                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -338,6 +383,24 @@ function showStatus(message, type = 'info') {
 }
 
 
+
+// Toggle between search and manual arbiter entry for a match
+function toggleManualArbiter(roundIndex, matchIndex) {
+    const searchSection = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search_section`);
+    const manualSection = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_manual_section`);
+    const toggleBtn = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_toggle`);
+
+    const isManual = !manualSection.classList.contains('hidden');
+    if (isManual) {
+        manualSection.classList.add('hidden');
+        searchSection.classList.remove('hidden');
+        toggleBtn.textContent = 'Zadaj manuálne';
+    } else {
+        searchSection.classList.add('hidden');
+        manualSection.classList.remove('hidden');
+        toggleBtn.textContent = 'Vybrať zo zoznamu';
+    }
+}
 
 // Populate arbiter dropdowns for all matches
 async function populateMatchArbiterDropdowns() {
@@ -525,42 +588,44 @@ function preparePDFDataArray() {
             const dateTime = document.getElementById(`round_${roundIndex}_match_${matchIndex}_datetime`)?.value || match.dateTime;
             const address = document.getElementById(`round_${roundIndex}_match_${matchIndex}_address`)?.value || match.address;
             
-            // Get arbiter info from the searchable input
-            const arbiterSearchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
-            const selectedArbiterId = arbiterSearchInput ? arbiterSearchInput.getAttribute('data-arbiter-id') : '';
-            
-            // Get arbiter details from the details element
-            const arbiterDetails = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
-            let arbiterName = '';
+            // Get arbiter info — check manual mode first
+            const manualSection = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_manual_section`);
+            const isManualMode = manualSection && !manualSection.classList.contains('hidden');
+
+            let arbiterFirstName = '';
+            let arbiterLastName = '';
             let arbiterId = '';
-            let arbiterClubName = '';
-            
-            if (arbiterDetails && arbiterDetails.textContent) {
-                // Extract name from the details text (format: "LastName FirstName (Level) - Club")
-                const detailsText = arbiterDetails.textContent;
-                const nameMatch = detailsText.match(/<strong>(.+?)<\/strong>/);
-                if (nameMatch) {
-                    arbiterName = nameMatch[1];
-                    arbiterId = selectedArbiterId;
-                    
-                    // Extract club name if present
-                    const clubMatch = detailsText.match(/- (.+?)<\/div>/);
-                    if (clubMatch) {
-                        arbiterClubName = clubMatch[1];
+
+            if (isManualMode) {
+                arbiterFirstName = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_manual_firstname`)?.value || '';
+                arbiterLastName = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_manual_lastname`)?.value || '';
+                arbiterId = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_manual_id`)?.value || '';
+            } else {
+                const arbiterSearchInput = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_search`);
+                const selectedArbiterId = arbiterSearchInput ? arbiterSearchInput.getAttribute('data-arbiter-id') : '';
+                const arbiterDetails = document.getElementById(`round_${roundIndex}_match_${matchIndex}_arbiter_details`);
+                let arbiterName = '';
+
+                if (arbiterDetails && arbiterDetails.textContent) {
+                    const detailsText = arbiterDetails.textContent;
+                    const nameMatch = detailsText.match(/<strong>(.+?)<\/strong>/);
+                    if (nameMatch) {
+                        arbiterName = nameMatch[1];
+                        arbiterId = selectedArbiterId;
                     }
                 }
-            }
-            
-            // If no arbiter details found, try to get from search input
-            if (!arbiterName && arbiterSearchInput && arbiterSearchInput.value) {
-                const inputValue = arbiterSearchInput.value;
-                // Parse the format: "LastName FirstName (Level) - Club"
-                const arbiterMatch = inputValue.match(/^(.+?) \((.+?)\)(?: - (.+))?$/);
-                if (arbiterMatch) {
-                    arbiterName = arbiterMatch[1];
-                    arbiterId = selectedArbiterId;
-                    arbiterClubName = arbiterMatch[3] || '';
+
+                if (!arbiterName && arbiterSearchInput && arbiterSearchInput.value) {
+                    const arbiterMatch = arbiterSearchInput.value.match(/^(.+?) \((.+?)\)(?: - (.+))?$/);
+                    if (arbiterMatch) {
+                        arbiterName = arbiterMatch[1];
+                        arbiterId = selectedArbiterId;
+                    }
                 }
+
+                // arbiterName is stored as "LastName FirstName"
+                arbiterFirstName = arbiterName.split(' ')[0] || '';
+                arbiterLastName = arbiterName.split(' ').slice(1).join(' ') || '';
             }
 
             const pdfData = {
@@ -572,10 +637,10 @@ function preparePDFDataArray() {
                     contact: globalDirectorInfo
                 },
                 arbiter: {
-                    firstName: arbiterName.split(' ')[0] || '',
-                    lastName: arbiterName.split(' ').slice(1).join(' ') || '',
+                    firstName: arbiterFirstName,
+                    lastName: arbiterLastName,
                     playerId: arbiterId,
-                    clubName: '' // just because of the updated ArbiterInfo in backend it wont run without this line :D 
+                    clubName: '' // just because of the updated ArbiterInfo in backend it wont run without this line :D
                 },
                 match: {
                     homeTeam: homeTeam,
