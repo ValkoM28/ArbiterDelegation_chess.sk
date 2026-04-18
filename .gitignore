@@ -1,4 +1,6 @@
 assets/*
 logs/*
+tmp/*
 
 .cloc
+bin/*
