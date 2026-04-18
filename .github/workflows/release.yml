@@ -65,12 +65,14 @@ jobs:
       - name: Package archives
         run: |
           for name in linux-amd64 linux-arm64 darwin-amd64 darwin-arm64; do
-            cp -r assets templates web README.md LICENSE "dist/$name/"
+            mkdir -p "dist/$name/assets/results" "dist/$name/assets/tempfiles"
+            cp -r templates web README.md LICENSE "dist/$name/"
             tar -czf "$name.tar.gz" -C dist "$name"
           done
 
           for name in windows-amd64 windows-arm64; do
-            cp -r assets templates web README.md LICENSE "dist/$name/"
+            mkdir -p "dist/$name/assets/results" "dist/$name/assets/tempfiles"
+            cp -r templates web README.md LICENSE "dist/$name/"
             (cd dist && zip -r "../$name.zip" "$name")
           done
 
